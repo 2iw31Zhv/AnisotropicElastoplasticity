@@ -12,12 +12,12 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	const Eigen::VectorXd& masses,
 	const Eigen::VectorXd& volumes,
 	const Eigen::VectorXd& densities) :
-	velocities_(velocities),
-	positions_(positions),
-	deformationGradients_(deformationGradients),
-	masses_(masses),
-	volumes_(volumes),
-	densities_(densities),
+	velocities(velocities),
+	positions(positions),
+	deformationGradients(deformationGradients),
+	masses(masses),
+	volumes(volumes),
+	densities(densities),
 	viewer_(nullptr)
 {
 
@@ -66,11 +66,11 @@ ParticleSystem ParticleSystem::Ball(const Eigen::Vector3d & center,
 
 void ParticleSystem::updateViewer()
 {
-	int numParticles = positions_.rows();
+	int numParticles = positions.rows();
 	using namespace viewer;
 	MatrixX3d colors;
 	colors.resize(numParticles, 3);
 	colors.setOnes();
 
-	viewer_->data.add_points(positions_, colors);
+	viewer_->data.add_points(positions, colors);
 }

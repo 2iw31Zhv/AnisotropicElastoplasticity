@@ -24,12 +24,24 @@
     <ClCompile Include="RegularGrid.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="interpolation.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HybridSolver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ParticleSystem.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="RegularGrid.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="interpolation.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HybridSolver.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

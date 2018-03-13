@@ -116,11 +116,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="HybridSolver.cpp" />
+    <ClCompile Include="interpolation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="RegularGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HybridSolver.h" />
+    <ClInclude Include="interpolation.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="RegularGrid.h" />
   </ItemGroup>

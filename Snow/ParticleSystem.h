@@ -13,18 +13,17 @@ namespace igl
 class ParticleSystem
 {
 private:
-	
-	Eigen::VectorXd masses_;
-	Eigen::VectorXd volumes_;
-	Eigen::VectorXd densities_;
-
-	Eigen::MatrixX3d velocities_;
-	Eigen::MatrixX3d positions_;
-
-	std::vector<Eigen::Matrix3d> deformationGradients_;
-
 	igl::viewer::Viewer * viewer_;
 public:
+
+	Eigen::VectorXd masses;
+	Eigen::VectorXd volumes;
+	Eigen::VectorXd densities;
+
+	Eigen::MatrixX3d velocities;
+	Eigen::MatrixX3d positions;
+
+	std::vector<Eigen::Matrix3d> deformationGradients;
 	ParticleSystem(
 		const Eigen::MatrixX3d& velocities,
 		const Eigen::MatrixX3d& positions,

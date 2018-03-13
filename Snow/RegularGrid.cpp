@@ -6,12 +6,6 @@ using namespace std;
 using namespace Eigen;
 using namespace igl;
 
-int RegularGrid::toIndex_(int i, int j, int k) const
-{
-	return k * resolution_[0] * resolution_[1]
-		+ j * resolution_[0] + i;
-}
-
 void RegularGrid::initializeRenderingData_()
 {
 	colors_.resize(gridNumber(), 3);
@@ -44,7 +38,7 @@ Vector3d v##s0##s1##s2(minBound_[0] + (i + s0 - 0.5) * h_[0], minBound_[1] + (j 
 				VTX(1, 1, 1);
 #undef VTX
 
-				int index = toIndex_(i, j, k);
+				int index = toIndex(i, j, k);
 
 				points_1_.row(12 * index + 0) = v000;
 				points_1_.row(12 * index + 1) = v100;
@@ -105,22 +99,27 @@ RegularGrid::RegularGrid(
 	h_[1] = (maxBound_[1] - minBound_[1]) / resolution_[1];
 	h_[2] = (maxBound_[2] - minBound_[2]) / resolution_[2];
 
-	data_.resize(resolution_[0] * resolution_[1] * resolution_[2]);
+	masses.resize(gridNumber());
+	forces.resize(gridNumber(), 3);
+	velocities.resize(gridNumber(), 3);
 
 	initializeRenderingData_();
 }
 
-const GridValue & RegularGrid::at(int i, int j, int k) const
+int RegularGrid::toIndex(int i, int j, int k) const
 {
-	return data_[toIndex_(i, j, k)];
+	return k * resolution_[0] * resolution_[1]
+		+ j * resolution_[0] + i;
 }
 
-void RegularGrid::set(int i, int j, int k, const GridValue & gridvalue)
+std::tuple<int, int, int> RegularGrid::toCoordinate(int index) const
 {
-	data_[toIndex_(i, j, k)] = gridvalue;
+	int k = index / (resolution_[0] * resolution_[1]);
+	int j = (index % (resolution_[0] * resolution_[1])) / resolution_[0];
+	int i = index - k * resolution_[0] * resolution_[1]
+		- j * resolution_[0];
+	return make_tuple(i, j, k);
 }
-
-
 
 void RegularGrid::updateViewer()
 {
