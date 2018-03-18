@@ -22,13 +22,15 @@ private:
 
 	Eigen::SparseMatrix<double> omegas_;
 	void evaluateInterpolationWeights_();
+	void particleToGrid_();
+	void computeGridForces_(double Dt);
 public:
 	HybridSolver(ParticleSystem * ps = nullptr, RegularGrid * rg = nullptr) :
 		ps_(ps), rg_(rg), viewer_(nullptr) {}
 
 	void setParticleSystem(ParticleSystem * ps) { ps_ = ps; }
 	void setRegularGrid(RegularGrid * rg) { rg_ = rg; }
-	void solve(double Dt);
+	void solve(double Dt, double maxt);
 
 	void bindViewer(igl::viewer::Viewer * viewer);
 	void updateViewer();

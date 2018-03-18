@@ -23,14 +23,22 @@ public:
 	Eigen::MatrixX3d velocities;
 	Eigen::MatrixX3d positions;
 
-	std::vector<Eigen::Matrix3d> deformationGradients;
+	std::vector<Eigen::Matrix3d> elasticDeformationGradients;
+	std::vector<Eigen::Matrix3d> plasticDeformationGradients;
+
+	double youngsModulus;
+	double poissonRatio;
+
 	ParticleSystem(
 		const Eigen::MatrixX3d& velocities,
 		const Eigen::MatrixX3d& positions,
-		const std::vector<Eigen::Matrix3d>& deformationGradients,
+		const std::vector<Eigen::Matrix3d>& elasticDeformationGradients,
+		const std::vector<Eigen::Matrix3d>& plasticDeformationGradients,
 		const Eigen::VectorXd& masses,
 		const Eigen::VectorXd& volumes,
-		const Eigen::VectorXd& densities);
+		const Eigen::VectorXd& densities,
+		double youngsModulus,
+		double poissonRatio);
 
 	static ParticleSystem Ball(const Eigen::Vector3d& center,
 		double radius,

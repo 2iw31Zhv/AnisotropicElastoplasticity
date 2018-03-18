@@ -29,6 +29,8 @@ int main()
 		Vector3i(50, 50, 50));
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
+	solver.solve(1e-5);
+
 	solver.bindViewer(&viewer);
 	
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);

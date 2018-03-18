@@ -8,16 +8,22 @@ using namespace igl;
 
 ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	const Eigen::MatrixX3d& positions,
-	const std::vector<Eigen::Matrix3d>& deformationGradients,
+	const std::vector<Eigen::Matrix3d>& elasticDeformationGradients,
+	const std::vector<Eigen::Matrix3d>& plasticDeformationGradients,
 	const Eigen::VectorXd& masses,
 	const Eigen::VectorXd& volumes,
-	const Eigen::VectorXd& densities) :
+	const Eigen::VectorXd& densities,
+	double youngsModulus,
+	double poissonRatio) :
 	velocities(velocities),
 	positions(positions),
-	deformationGradients(deformationGradients),
+	elasticDeformationGradients(elasticDeformationGradients),
+	plasticDeformationGradients(plasticDeformationGradients),
 	masses(masses),
 	volumes(volumes),
 	densities(densities),
+	youngsModulus(youngsModulus),
+	poissonRatio(poissonRatio),
 	viewer_(nullptr)
 {
 
@@ -42,11 +48,13 @@ ParticleSystem ParticleSystem::Ball(const Eigen::Vector3d & center,
 	velocities.resize(sampleNumber, 3);
 	velocities.setZero();
 
-	vector<Matrix3d> deformationGradients;
+	vector<Matrix3d> elasticDeformationGradients;
+	vector<Matrix3d> plasticDeformationGradients;
 
 	for (int i = 0; i < sampleNumber; ++i)
 	{
-		deformationGradients.push_back(Matrix3d::Identity());
+		elasticDeformationGradients.push_back(Matrix3d::Identity());
+		plasticDeformationGradients.push_back(Matrix3d::Identity());
 	}
 
 	VectorXd masses(sampleNumber);
@@ -58,10 +66,13 @@ ParticleSystem ParticleSystem::Ball(const Eigen::Vector3d & center,
 
 	return ParticleSystem(velocities,
 		positions,
-		deformationGradients,
+		elasticDeformationGradients,
+		plasticDeformationGradients,
 		masses,
 		volumes,
-		densities);
+		densities,
+		1.4e5,
+		0.2);
 }
 
 void ParticleSystem::updateViewer()

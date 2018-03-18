@@ -6,9 +6,32 @@ using namespace std;
 using namespace Eigen;
 using namespace igl;
 
+static double hue2rgb(double p, double q, double t)
+{
+	if (t < 0) t += 1.0;
+	if (t > 1.0) t -= 1.0;
+	if (t < 1.0 / 6.0) return p + (q - p) * 6 * t;
+	if (t < 0.5) return q;
+	if (t < 2.0 / 3.0) return p + (q - p)*(2.0 / 3.0 - t) * 6;
+	return p;
+}
+
+static Vector3d hslToRgb(double h, double s, double l)
+{
+	Vector3d result(l, l, l);
+	if (s == 0)
+		return result;
+	double q = (l < 0.5 ? l*(1.0 + s) : l + s - l*s);
+	double p = 2.0*l - q;
+	result[0] = hue2rgb(p, q, h + 1.0 / 3.0);
+	result[1] = hue2rgb(p, q, h);
+	result[2] = hue2rgb(p, q, h - 1.0 / 3.0);
+	return result;
+}
+
 void RegularGrid::initializeRenderingData_()
 {
-	colors_.resize(gridNumber(), 3);
+	colors_.resize(gridNumber() * 12, 3);
 	colors_.col(2).setOnes();
 	points_1_.resize(gridNumber() * 12, 3);
 	points_2_.resize(gridNumber() * 12, 3);
@@ -18,11 +41,11 @@ void RegularGrid::initializeRenderingData_()
 		return Vector3d(i * h_[0], j * h_[1], k * h_[2]);
 	};
 
-	for (int i = 0; i < resolution_[0]; ++i)
+	for (int k = 0; k < resolution_[2]; ++k)
 	{
 		for (int j = 0; j < resolution_[1]; ++j)
 		{
-			for (int k = 0; k < resolution_[2]; ++k)
+			for (int i = 0; i < resolution_[0]; ++i)
 			{
 
 #define VTX(s0, s1, s2) \
@@ -70,6 +93,42 @@ Vector3d v##s0##s1##s2(minBound_[0] + (i + s0 - 0.5) * h_[0], minBound_[1] + (j 
 				points_2_.row(12 * index + 10) = v011;
 				points_2_.row(12 * index + 11) = v001;
 
+			}
+		}
+	}
+}
+
+void RegularGrid::recomputeColors()
+{
+	double massMax = 1e-2;
+	for (int k = 0; k < resolution_[2]; ++k)
+	{
+		for (int j = 0; j < resolution_[1]; ++j)
+		{
+			for (int i = 0; i < resolution_[0]; ++i)
+			{
+
+				int index = toIndex(i, j, k);
+
+				double colorVal = min(masses[index] / massMax, 1.0);
+				double h = (1.0 - colorVal) * 240.0 / 360.0;
+				double s = 100.0 / 100.0;
+				double l = 50.0 / 100.0;
+
+				Vector3d color = hslToRgb(h, s, l);
+
+				colors_.row(12 * index + 0) = color;
+				colors_.row(12 * index + 1) = color;
+				colors_.row(12 * index + 2) = color;
+				colors_.row(12 * index + 3) = color;
+				colors_.row(12 * index + 4) = color;
+				colors_.row(12 * index + 5) = color;
+				colors_.row(12 * index + 6) = color;
+				colors_.row(12 * index + 7) = color;
+				colors_.row(12 * index + 8) = color;
+				colors_.row(12 * index + 9) = color;
+				colors_.row(12 * index + 10) = color;
+				colors_.row(12 * index + 11) = color;
 			}
 		}
 	}
