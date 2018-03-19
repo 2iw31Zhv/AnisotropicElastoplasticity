@@ -25,6 +25,10 @@ private:
 	igl::viewer::Viewer * viewer_;
 
 	Eigen::SparseMatrix<double> omegas_;
+	Eigen::SparseMatrix<double> domegas_1_;
+	Eigen::SparseMatrix<double> domegas_2_;
+	Eigen::SparseMatrix<double> domegas_3_;
+
 	std::vector<Eigen::Matrix3d> candidateElasticDeformationGradients_;
 	
 	LevelSet phi_;
