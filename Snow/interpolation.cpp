@@ -38,7 +38,7 @@ double Dcubic_B_spline(double x)
 	{
 		return 1.5 * x * x - 2.0 * x;
 	}
-	else if (1.0 <= x && x < 2.0)
+	else
 	{
 		return -0.5 * x * x + 2.0 * x - 2.0;
 	}

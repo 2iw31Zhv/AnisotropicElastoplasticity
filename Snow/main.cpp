@@ -5,6 +5,7 @@
 #include "ParticleSystem.h"
 #include "RegularGrid.h"
 #include "HybridSolver.h"
+#include "LevelSet.h"
 
 using namespace std;
 using namespace Eigen;
@@ -29,13 +30,19 @@ int main()
 		Vector3i(50, 50, 50));
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
-	solver.solve(1e-5);
+	solver.solve(1e-5, 1.0);
+
+	using namespace std::placeholders;
+	LevelSet gls_m18 = bind(groundLevelSet, _1, -1.8);
+	DLevelSet dgls_m18 = bind(DgroundLevelSet, _1, -1.8);
+	solver.setLevelSet(gls_m18, dgls_m18);
 
 	solver.bindViewer(&viewer);
 	
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
 	viewer.core.show_lines = true;
+	
 	//viewer.callback_key_down = &key_down;
 	viewer.callback_pre_draw = &pre_draw;
 	viewer.launch();

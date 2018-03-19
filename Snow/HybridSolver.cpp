@@ -77,7 +77,7 @@ void HybridSolver::computeGridForces_(double Dt)
 		double lambda = lambda0 * exp(hardeningCoeff * (1 - J_plastic));
 		double mu = mu0 * exp(hardeningCoeff * (1 - J_plastic));
 
-		const Vector3d& posRef = ps_->positions.row(p) - rg_->minBound();
+		const Vector3d& posRef = ps_->positions.row(p).transpose() - rg_->minBound();
 
 		Matrix3d EDG_modifier;
 		EDG_modifier.setZero();
@@ -135,7 +135,7 @@ void HybridSolver::computeGridForces_(double Dt)
 
 		for (int p = 0; p < numParticles; ++p)
 		{
-			const Vector3d& posRef = ps_->positions.row(p) - rg_->minBound();
+			const Vector3d& posRef = ps_->positions.row(p).transpose() - rg_->minBound();
 			double xref = posRef[0] / rg_->h()[0] - i;
 			double yref = posRef[1] / rg_->h()[1] - j;
 			double zref = posRef[2] / rg_->h()[2] - k;
@@ -153,6 +153,55 @@ void HybridSolver::computeGridForces_(double Dt)
 		}
 		rg_->forces.row(c) -= rg_->masses[c] * Vector3d(0.0, 0.0, -9.8);
 	}
+}
+
+void HybridSolver::gridCollisionHandling_()
+{
+	double friction = 0.2;
+
+	for (int k = 0; k < rg_->resolution()[2]; ++k)
+	{
+		for (int j = 0; j < rg_->resolution()[1]; ++j)
+		{
+			for (int i = 0; i < rg_->resolution()[0]; ++i)
+			{
+				Vector3d gridPos(
+					rg_->minBound()[0] + i * rg_->h()[0],
+					rg_->minBound()[1] + j * rg_->h()[1],
+					rg_->minBound()[2] + k * rg_->h()[2]);
+
+				if (phi_(gridPos) <= 0.0)
+				{
+					int index = rg_->toIndex(i, j, k);
+					const Vector3d& velocity = rg_->velocities.row(index);
+					const Vector3d& normal = dphi_(gridPos);
+
+					Vector3d vRef = velocity; // for static object
+
+					double vNormal = vRef.dot(normal);
+
+					if (vNormal < 0.0) // approaching
+					{
+						Vector3d vTangential = vRef - vNormal * normal;
+						if (vTangential.norm() < -friction * vNormal)
+						{
+							vRef = Vector3d::Zero();
+						}
+						else
+						{
+							vRef = vTangential 
+								+ friction * vNormal * vTangential / vTangential.norm();
+						}
+						
+						Vector3d vContact = vRef;
+
+						rg_->velocities.row(index) = vContact;
+					}
+				}
+			}
+		}
+	}
+
 }
 
 void HybridSolver::solve(double Dt, double maxt)
@@ -177,8 +226,7 @@ void HybridSolver::solve(double Dt, double maxt)
 	{
 		computeGridForces_(Dt);
 		rg_->velocities += Dt * rg_->masses.asDiagonal() * rg_->forces;
-
-		//	collision projection
+		gridCollisionHandling_();
 
 		//	update deformation gradient
 

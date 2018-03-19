@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Sparse>
+#include <functional>
 
 class ParticleSystem;
 class RegularGrid;
@@ -12,6 +13,9 @@ namespace igl
 	}
 }
 
+using LevelSet = std::function<double(const Eigen::Vector3d&)>;
+using DLevelSet = std::function<Eigen::Vector3d(const Eigen::Vector3d&)>;
+
 class HybridSolver
 {
 private:
@@ -21,15 +25,22 @@ private:
 	igl::viewer::Viewer * viewer_;
 
 	Eigen::SparseMatrix<double> omegas_;
+
+	LevelSet phi_;
+	DLevelSet dphi_;
+
 	void evaluateInterpolationWeights_();
 	void particleToGrid_();
 	void computeGridForces_(double Dt);
+	void gridCollisionHandling_();
+
 public:
 	HybridSolver(ParticleSystem * ps = nullptr, RegularGrid * rg = nullptr) :
 		ps_(ps), rg_(rg), viewer_(nullptr) {}
 
 	void setParticleSystem(ParticleSystem * ps) { ps_ = ps; }
 	void setRegularGrid(RegularGrid * rg) { rg_ = rg; }
+	void setLevelSet(const LevelSet& phi, const DLevelSet& dphi) { phi_ = phi; dphi_ = dphi; }
 	void solve(double Dt, double maxt);
 
 	void bindViewer(igl::viewer::Viewer * viewer);

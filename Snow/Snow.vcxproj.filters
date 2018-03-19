@@ -30,6 +30,9 @@
     <ClCompile Include="HybridSolver.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="LevelSet.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ParticleSystem.h">
@@ -42,6 +45,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="HybridSolver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelSet.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
