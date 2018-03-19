@@ -23,7 +23,7 @@ bool pre_draw(viewer::Viewer &viewer)
 
 void simulate()
 {
-	solver.solve(1e-5, 100.0, 0.95);
+	solver.solve(0.001, 100.0, 0.95);
 }
 bool key_down(igl::viewer::Viewer& viewer, unsigned char key, int modifier)
 {

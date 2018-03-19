@@ -178,7 +178,7 @@ void HybridSolver::computeGridForces_(double Dt)
 
 	for (int c = 0; c < numGrids; ++c)
 	{
-		rg_->forces.row(c) -= rg_->masses[c] * Vector3d(0.0, 0.0, -9.8);
+		rg_->forces.row(c) += rg_->masses[c] * Vector3d(0.0, 0.0, -9.8);
 	}
 }
 
@@ -298,7 +298,7 @@ void HybridSolver::solve(double Dt, double maxt, double alpha)
 		clog << "update particle positions...";
 		ps_->positions += Dt * ps_->velocities;
 		clog << "done!\n";
-		updateViewer();
+		//updateViewer();
 
 		clog << "evaluate iteration weights...";
 		evaluateInterpolationWeights_();
@@ -329,6 +329,27 @@ void HybridSolver::updateViewer()
 {
 	using namespace viewer;
 	viewer_->data.clear();
+	mtx_.lock();
 	ps_->updateViewer();
 	//rg_->updateViewer();
+	MatrixX3d e0, e1, c;
+	e0.resize(4, 3);
+	e1.resize(4, 3);
+	c.resize(4, 3);
+
+	c.setZero();
+	c.col(1).setOnes();
+
+	e0.row(0) = Vector3d(-10.0, -10.0, -1.8);
+	e0.row(1) = Vector3d(-10.0, 10.0, -1.8);
+	e0.row(2) = Vector3d(10.0, 10.0, -1.8);
+	e0.row(3) = Vector3d(10.0, -10.0, -1.8);
+
+	e1.row(0) = e0.row(1);
+	e1.row(1) = e0.row(2);
+	e1.row(2) = e0.row(3);
+	e1.row(3) = e0.row(0);
+
+	viewer_->data.add_edges(e0, e1, c);
+	mtx_.unlock();
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Sparse>
 #include <functional>
+#include <mutex>
 
 class ParticleSystem;
 class RegularGrid;
@@ -34,6 +35,7 @@ private:
 	LevelSet phi_;
 	DLevelSet dphi_;
 
+
 	void evaluateInterpolationWeights_();
 	void particleToGrid_();
 	void computeGridForces_(double Dt);
@@ -41,6 +43,8 @@ private:
 	void updateDeformationGradients_();
 	void updateParticleVelocities_(double alpha, double Dt);
 public:
+
+	std::mutex mtx_;
 	HybridSolver(ParticleSystem * ps = nullptr, RegularGrid * rg = nullptr) :
 		ps_(ps), rg_(rg), viewer_(nullptr) {}
 

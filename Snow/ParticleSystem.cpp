@@ -63,8 +63,11 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 		plasticDeformationGradients.push_back(Matrix3d::Identity());
 	}
 
+	double totalMass = 100.0 * 3.14 * radius * radius * radius;
+
 	VectorXd masses(sampleNumber);
 	masses.setOnes();
+	masses *= totalMass / sampleNumber;
 	VectorXd volumes(sampleNumber);
 	volumes.setOnes();
 	VectorXd densities(sampleNumber);
@@ -87,10 +90,8 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 void ParticleSystem::updateViewer()
 {
 	int numParticles = positions.rows();
-	using namespace viewer;
 	MatrixX3d colors;
 	colors.resize(numParticles, 3);
 	colors.setOnes();
-
 	viewer_->data.add_points(positions, colors);
 }
