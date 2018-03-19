@@ -14,7 +14,10 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	const Eigen::VectorXd& volumes,
 	const Eigen::VectorXd& densities,
 	double youngsModulus,
-	double poissonRatio) :
+	double poissonRatio,
+	double criticalCompression,
+	double critialStretch,
+	double friction) :
 	velocities(velocities),
 	positions(positions),
 	elasticDeformationGradients(elasticDeformationGradients),
@@ -24,12 +27,15 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	densities(densities),
 	youngsModulus(youngsModulus),
 	poissonRatio(poissonRatio),
+	criticalCompression(criticalCompression),
+	criticalStretch(critialStretch),
+	friction(friction),
 	viewer_(nullptr)
 {
 
 }
 
-ParticleSystem ParticleSystem::Ball(const Eigen::Vector3d & center, 
+ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center, 
 	double radius, 
 	int sampleNumber)
 {
@@ -72,6 +78,9 @@ ParticleSystem ParticleSystem::Ball(const Eigen::Vector3d & center,
 		volumes,
 		densities,
 		1.4e5,
+		0.2,
+		2.5e-2,
+		7.5e-3,
 		0.2);
 }
 

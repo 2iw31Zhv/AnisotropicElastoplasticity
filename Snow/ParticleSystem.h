@@ -28,6 +28,9 @@ public:
 
 	double youngsModulus;
 	double poissonRatio;
+	double criticalCompression;
+	double criticalStretch;
+	double friction;
 
 	ParticleSystem(
 		const Eigen::MatrixX3d& velocities,
@@ -38,9 +41,12 @@ public:
 		const Eigen::VectorXd& volumes,
 		const Eigen::VectorXd& densities,
 		double youngsModulus,
-		double poissonRatio);
+		double poissonRatio,
+		double criticalCompression,
+		double criticalStretch,
+		double friction);
 
-	static ParticleSystem Ball(const Eigen::Vector3d& center,
+	static ParticleSystem SnowBall(const Eigen::Vector3d& center,
 		double radius,
 		int sampleNumber);
 

@@ -1,6 +1,9 @@
 #include "interpolation.h"
 #include "interpolation.h"
 #include <cmath>
+#include <functional>
+
+using namespace std;
 
 double cubic_B_spline(double x)
 {
@@ -41,5 +44,21 @@ double Dcubic_B_spline(double x)
 	else
 	{
 		return -0.5 * x * x + 2.0 * x - 2.0;
+	}
+}
+
+double clamp(double x, double lowerBound, double higherBound)
+{
+	if (x > higherBound)
+	{
+		return higherBound;
+	}
+	else if (x < lowerBound)
+	{
+		return lowerBound;
+	}
+	else
+	{
+		return x;
 	}
 }

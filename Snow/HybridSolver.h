@@ -25,7 +25,8 @@ private:
 	igl::viewer::Viewer * viewer_;
 
 	Eigen::SparseMatrix<double> omegas_;
-
+	std::vector<Eigen::Matrix3d> candidateElasticDeformationGradients_;
+	
 	LevelSet phi_;
 	DLevelSet dphi_;
 
@@ -33,7 +34,8 @@ private:
 	void particleToGrid_();
 	void computeGridForces_(double Dt);
 	void gridCollisionHandling_();
-
+	void updateDeformationGradients_();
+	void updateParticleVelocities_(double alpha, double Dt);
 public:
 	HybridSolver(ParticleSystem * ps = nullptr, RegularGrid * rg = nullptr) :
 		ps_(ps), rg_(rg), viewer_(nullptr) {}
@@ -41,7 +43,7 @@ public:
 	void setParticleSystem(ParticleSystem * ps) { ps_ = ps; }
 	void setRegularGrid(RegularGrid * rg) { rg_ = rg; }
 	void setLevelSet(const LevelSet& phi, const DLevelSet& dphi) { phi_ = phi; dphi_ = dphi; }
-	void solve(double Dt, double maxt);
+	void solve(double Dt, double maxt, double alpha);
 
 	void bindViewer(igl::viewer::Viewer * viewer);
 	void updateViewer();

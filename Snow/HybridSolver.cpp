@@ -54,6 +54,12 @@ void HybridSolver::evaluateInterpolationWeights_()
 
 void HybridSolver::particleToGrid_()
 {
+	rg_->masses = omegas_.transpose() * ps_->masses;
+	rg_->recomputeColors();
+
+	const MatrixX3d& momenta_p = ps_->masses.asDiagonal() * ps_->velocities;
+	const MatrixX3d& momenta_i = omegas_.transpose() * momenta_p;
+	rg_->velocities = rg_->masses.asDiagonal().inverse() * momenta_i;
 }
 
 void HybridSolver::computeGridForces_(double Dt)
@@ -61,7 +67,8 @@ void HybridSolver::computeGridForces_(double Dt)
 	int numParticles = ps_->elasticDeformationGradients.size();
 	int numGrids = rg_->gridNumber();
 	vector<Matrix3d> cauchyStresses(numParticles);
-	
+	candidateElasticDeformationGradients_.resize(numParticles);
+
 	double E0 = ps_->youngsModulus;
 	double nu0 = ps_->poissonRatio;
 
@@ -110,7 +117,7 @@ void HybridSolver::computeGridForces_(double Dt)
 		const MatrixX3d& PDG = ps_->plasticDeformationGradients[p];
 
 		MatrixX3d virtualEDG = EDG + EDG_modifier * EDG;
-		
+		candidateElasticDeformationGradients_[p] = virtualEDG;
 		
 		// polar decomposition
 		JacobiSVD<Matrix3d> svd(virtualEDG, ComputeFullU | ComputeFullV);
@@ -157,7 +164,7 @@ void HybridSolver::computeGridForces_(double Dt)
 
 void HybridSolver::gridCollisionHandling_()
 {
-	double friction = 0.2;
+	double friction = ps_->friction;
 
 	for (int k = 0; k < rg_->resolution()[2]; ++k)
 	{
@@ -204,38 +211,81 @@ void HybridSolver::gridCollisionHandling_()
 
 }
 
-void HybridSolver::solve(double Dt, double maxt)
+void HybridSolver::updateDeformationGradients_()
 {
-	// rasterize particle data to grid: m, v
+	for (int p = 0; p < ps_->elasticDeformationGradients.size(); ++p)
+	{
+		Matrix3d totalDeformationGradient = candidateElasticDeformationGradients_[p]
+			* ps_->plasticDeformationGradients[p];
+		JacobiSVD<Matrix3d> svd(candidateElasticDeformationGradients_[p], ComputeFullU | ComputeFullV);
+
+		Matrix3d U = svd.matrixU();
+		Vector3d Sigma = svd.singularValues();
+		Matrix3d V = svd.matrixV();
+		
+		Sigma[0] = clamp(Sigma[0], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+		Sigma[1] = clamp(Sigma[1], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+		Sigma[2] = clamp(Sigma[2], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+
+		ps_->elasticDeformationGradients[p] = U * Sigma.asDiagonal() * V.transpose();
+		ps_->plasticDeformationGradients[p] = V * Sigma.cwiseInverse().asDiagonal()
+			* U.transpose() * totalDeformationGradient;
+
+	}
+}
+
+void HybridSolver::updateParticleVelocities_(double alpha, double Dt)
+{
+	ps_->velocities = (1.0 - alpha) * omegas_ * rg_->velocities
+		+ alpha * (ps_->velocities + Dt * omegas_ * rg_->masses.asDiagonal() * rg_->forces);
+}
+
+void HybridSolver::solve(double Dt, double maxt, double alpha)
+{
+	clog << "evaluate the initial weights...";
 	evaluateInterpolationWeights_();
-	rg_->masses = omegas_.transpose() * ps_->masses;
-	rg_->recomputeColors();
+	clog << "done!\n";
+	clog << "first particle to grid...";
+	particleToGrid_();
+	clog << "done!\n";
 
-	const MatrixX3d& momenta_p = ps_->masses.asDiagonal() * ps_->velocities;
-	const MatrixX3d& momenta_i = omegas_.transpose() * momenta_p;
-	rg_->velocities = rg_->masses.asDiagonal().inverse() * momenta_i;
-
-	// compute particle densities and volumes
+	clog << "evaluate particle densities and volumes...";
 	ps_->densities = omegas_ * rg_->masses / rg_->gridVolume();
 	ps_->volumes = ps_->masses.cwiseProduct(ps_->densities.cwiseInverse());
-
+	clog << "done!\n";
 
 	double t = 0.0;
 
+	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
+		clog << "time: " << t << endl;
+		clog << "compute grid forces...";
 		computeGridForces_(Dt);
+		clog << "done!\n";
+		clog << "update grid velocities...";
 		rg_->velocities += Dt * rg_->masses.asDiagonal() * rg_->forces;
+		clog << "done!\n";
+		clog << "grid collision handling...";
 		gridCollisionHandling_();
+		clog << "done!\n";
+		clog << "update deformation gradients...";
+		updateDeformationGradients_();
+		clog << "done!\n";
+		clog << "update particle velocities...";
+		updateParticleVelocities_(alpha, Dt);
+		clog << "done!\n";
+		clog << "update particle positions...";
+		ps_->positions += Dt * ps_->velocities;
+		clog << "done!\n";
+		updateViewer();
 
-		//	update deformation gradient
-
-		//	update particle velocities
-
-		//	update particle positions
-
-		//	rasterize particle data to grid: m, v
-
+		clog << "evaluate iteration weights...";
+		evaluateInterpolationWeights_();
+		clog << "done!\n";
+		clog << "iterate particle to grid...";
+		particleToGrid_();
+		clog << "done!\n";
 		t += Dt;
 	}
 
@@ -258,6 +308,7 @@ void HybridSolver::bindViewer(igl::viewer::Viewer * viewer)
 void HybridSolver::updateViewer()
 {
 	using namespace viewer;
-	//ps_->updateViewer();
-	rg_->updateViewer();
+	viewer_->data.clear();
+	ps_->updateViewer();
+	//rg_->updateViewer();
 }
