@@ -20,7 +20,6 @@ bool pre_draw(viewer::Viewer &viewer)
 	solver.updateViewer();
 	return false;
 }
-
 void simulate()
 {
 	solver.solve(0.001, 100.0, 0.95);
@@ -39,7 +38,7 @@ int main()
 {
 	viewer::Viewer viewer;
 
-	ParticleSystem ps = ParticleSystem::SnowBall(Vector3d(0.0, 0.0, 0.0), 1.0, 1000);
+	ParticleSystem ps = ParticleSystem::SandBall(Vector3d(0.0, 0.0, 0.0), 1.0, 1e4);
 	RegularGrid rg(Vector3d(-2.0, -2.0, -2.0),
 		Vector3d(2.0, 2.0, 2.0),
 		Vector3i(50, 50, 50));
@@ -54,7 +53,9 @@ int main()
 	solver.setLevelSet(gls_m18, dgls_m18);
 
 	solver.bindViewer(&viewer);
-	
+
+
+	viewer.core.point_size = 1.0;
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
 	viewer.core.show_lines = true;

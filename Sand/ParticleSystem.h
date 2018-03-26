@@ -14,6 +14,9 @@ class ParticleSystem
 {
 private:
 	igl::viewer::Viewer * viewer_;
+
+	Eigen::MatrixX3d colors_;
+	void sampleSandColor_();
 public:
 
 	Eigen::VectorXd masses;
@@ -23,6 +26,7 @@ public:
 	Eigen::MatrixX3d velocities;
 	Eigen::MatrixX3d positions;
 
+	
 	std::vector<Eigen::Matrix3d> elasticDeformationGradients;
 	std::vector<Eigen::Matrix3d> plasticDeformationGradients;
 
@@ -50,6 +54,11 @@ public:
 		double radius,
 		int sampleNumber);
 
+	static ParticleSystem SandBall(const Eigen::Vector3d& center,
+		double radius,
+		int sampleNumber);
+
 	void bindViewer(igl::viewer::Viewer * viewer) { viewer_ = viewer; }
 	void updateViewer();
+	
 };

@@ -1,5 +1,6 @@
 #include "ParticleSystem.h"
 #include <igl/viewer/Viewer.h>
+#include <random>
 
 
 using namespace std;
@@ -32,7 +33,7 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	friction(friction),
 	viewer_(nullptr)
 {
-
+	sampleSandColor_();
 }
 
 ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center, 
@@ -87,11 +88,31 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 		0.2);
 }
 
+ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double radius, int sampleNumber)
+{
+	return SnowBall(center, radius, sampleNumber);
+}
+
 void ParticleSystem::updateViewer()
 {
-	int numParticles = positions.rows();
-	MatrixX3d colors;
-	colors.resize(numParticles, 3);
-	colors.setOnes();
-	viewer_->data.add_points(positions, colors);
+	viewer_->data.add_points(positions, colors_);
+}
+
+void ParticleSystem::sampleSandColor_()
+{
+	Matrix3d colorBasis;
+	colorBasis.row(0) = Vector3d(225.0, 169.0, 95.0) / 255.0; //yellow
+	colorBasis.row(1) = Vector3d(107.0, 84.0, 30.0) / 255.0; //brown
+	colorBasis.row(2) = Vector3d(255.0, 255.0, 255.0) / 255.0; //white
+
+	default_random_engine generator;
+	discrete_distribution<int> distribution {0.85, 0.1, 0.05};
+
+	int N = masses.size();
+	colors_.resize(N, 3);
+
+	for (int i = 0; i < N; ++i)
+	{
+		colors_.row(i) = colorBasis.row(distribution(generator));
+	}
 }
