@@ -33,6 +33,12 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	friction(friction),
 	viewer_(nullptr)
 {
+	int N = masses.size();
+
+	affineMomenta_1.resize(N, 3);
+	affineMomenta_2.resize(N, 3);
+	affineMomenta_3.resize(N, 3);
+
 	sampleSandColor_();
 }
 
@@ -57,11 +63,13 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 
 	vector<Matrix3d> elasticDeformationGradients;
 	vector<Matrix3d> plasticDeformationGradients;
+	vector<Matrix3d> affineMomenta;
 
 	for (int i = 0; i < sampleNumber; ++i)
 	{
 		elasticDeformationGradients.push_back(Matrix3d::Identity());
 		plasticDeformationGradients.push_back(Matrix3d::Identity());
+		affineMomenta.push_back(Matrix3d::Zero());
 	}
 
 	double totalMass = 100.0 * 3.14 * radius * radius * radius;

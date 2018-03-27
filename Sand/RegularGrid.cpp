@@ -161,6 +161,22 @@ RegularGrid::RegularGrid(
 	masses.resize(gridNumber());
 	forces.resize(gridNumber(), 3);
 	velocities.resize(gridNumber(), 3);
+	positions_.resize(gridNumber(), 3);
+
+
+	for (int k = 0; k < resolution_[2]; ++k)
+	{
+		for (int j = 0; j < resolution_[1]; ++j)
+		{
+			for (int i = 0; i < resolution_[0]; ++i)
+			{
+				positions_.row(toIndex(i, j, k)) = Vector3d(
+					minBound_[0] + i * h_[0], 
+					minBound_[1] + j * h_[1], 
+					minBound_[2] + k * h_[2]);
+			}
+		}
+	}
 
 	initializeRenderingData_();
 }

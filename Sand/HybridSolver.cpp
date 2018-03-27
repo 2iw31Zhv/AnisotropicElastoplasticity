@@ -10,6 +10,8 @@ using namespace std;
 using namespace Eigen;
 using namespace igl;
 
+#define AFFINE_PIC
+
 void HybridSolver::evaluateInterpolationWeights_()
 {
 	vector<Triplet<double>> omegaTriplets;
@@ -89,12 +91,44 @@ void HybridSolver::particleToGrid_()
 	rg_->masses = omegas_.transpose() * ps_->masses;
 	rg_->recomputeColors();
 
+
 	const MatrixX3d& momenta_p = ps_->masses.asDiagonal() * ps_->velocities;
-	const MatrixX3d& momenta_i = omegas_.transpose() * momenta_p;
+	MatrixX3d momenta_i = omegas_.transpose() * momenta_p;
+
+#if defined(AFFINE_PIC)
+	double inertiaTensorRatio = 3.0 / pow(rg_->h().prod(), 2.0 / 3.0);
+	const MatrixX3d& cellAffineMomenta_1 = inertiaTensorRatio
+		* omegas_.transpose() * ps_->masses.asDiagonal()
+		* ps_->affineMomenta_1;
+	const MatrixX3d& cellAffineMomenta_2 = inertiaTensorRatio
+		* omegas_.transpose() * ps_->masses.asDiagonal()
+		* ps_->affineMomenta_2;
+	const MatrixX3d& cellAffineMomenta_3 = inertiaTensorRatio
+		* omegas_.transpose() * ps_->masses.asDiagonal()
+		* ps_->affineMomenta_3;
+
+	momenta_i.col(0) += (cellAffineMomenta_1.array() * rg_->positions().array())
+		.rowwise().sum().matrix();
+	momenta_i.col(1) += (cellAffineMomenta_2.array() * rg_->positions().array())
+		.rowwise().sum().matrix();
+	momenta_i.col(2) += (cellAffineMomenta_3.array() * rg_->positions().array())
+		.rowwise().sum().matrix();
+
+	momenta_i.col(0) -= inertiaTensorRatio * omegas_.transpose()
+		* ps_->masses.cwiseProduct(
+		(ps_->affineMomenta_1.array() * ps_->positions.array()).rowwise().sum().matrix());
+	momenta_i.col(1) -= inertiaTensorRatio * omegas_.transpose()
+		* ps_->masses.cwiseProduct(
+		(ps_->affineMomenta_2.array() * ps_->positions.array()).rowwise().sum().matrix());
+	momenta_i.col(2) -= inertiaTensorRatio * omegas_.transpose()
+		* ps_->masses.cwiseProduct(
+		(ps_->affineMomenta_3.array() * ps_->positions.array()).rowwise().sum().matrix());
+
+#endif
+	
 	rg_->velocities = rg_->masses.asDiagonal().inverse() * momenta_i;
 }
 
-// need optimization
 void HybridSolver::computeGridForces_(double Dt)
 {
 	int numParticles = ps_->elasticDeformationGradients.size();
@@ -256,8 +290,25 @@ void HybridSolver::updateDeformationGradients_()
 
 void HybridSolver::updateParticleVelocities_(double alpha, double Dt)
 {
+#if defined(AFFINE_PIC)
+	ps_->velocities = omegas_ * rg_->velocities;
+#else
 	ps_->velocities = (1.0 - alpha) * omegas_ * rg_->velocities
 		+ alpha * (ps_->velocities + Dt * omegas_ * rg_->masses.asDiagonal() * rg_->forces);
+#endif
+}
+
+void HybridSolver::updateAffineMomenta_()
+{
+	ps_->affineMomenta_1 = omegas_ * rg_->velocities.col(0).asDiagonal()
+		* rg_->positions()
+		- ps_->velocities.col(0).asDiagonal() * ps_->positions;
+	ps_->affineMomenta_2 = omegas_ * rg_->velocities.col(1).asDiagonal()
+		* rg_->positions()
+		- ps_->velocities.col(1).asDiagonal() * ps_->positions;
+	ps_->affineMomenta_3 = omegas_ * rg_->velocities.col(2).asDiagonal()
+		* rg_->positions()
+		- ps_->velocities.col(2).asDiagonal() * ps_->positions;
 }
 
 void HybridSolver::solve(double Dt, double maxt, double alpha)
@@ -295,6 +346,12 @@ void HybridSolver::solve(double Dt, double maxt, double alpha)
 		clog << "update particle velocities...";
 		updateParticleVelocities_(alpha, Dt);
 		clog << "done!\n";
+
+#if defined(AFFINE_PIC)
+		clog << "update affine momenta...";
+		updateAffineMomenta_();
+		clog << "done!\n";
+#endif
 		clog << "update particle positions...";
 		ps_->positions += Dt * ps_->velocities;
 		clog << "done!\n";

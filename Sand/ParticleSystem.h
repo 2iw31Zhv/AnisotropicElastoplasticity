@@ -26,6 +26,9 @@ public:
 	Eigen::MatrixX3d velocities;
 	Eigen::MatrixX3d positions;
 
+	Eigen::MatrixX3d affineMomenta_1;
+	Eigen::MatrixX3d affineMomenta_2;
+	Eigen::MatrixX3d affineMomenta_3;
 	
 	std::vector<Eigen::Matrix3d> elasticDeformationGradients;
 	std::vector<Eigen::Matrix3d> plasticDeformationGradients;

@@ -26,6 +26,7 @@ private:
 	Eigen::MatrixX3d points_2_;
 	Eigen::MatrixX3d colors_;
 
+	Eigen::MatrixX3d positions_;
 
 	void initializeRenderingData_();
 	
@@ -33,8 +34,10 @@ public:
 	void recomputeColors();
 	Eigen::MatrixX3d velocities;
 	Eigen::MatrixX3d forces;
-	Eigen::VectorXd masses;
+	
 
+	Eigen::VectorXd masses;
+	
 	RegularGrid(const Eigen::VectorXd& minBound,
 		const Eigen::VectorXd& maxBound,
 		const Eigen::Vector3i& resolution);
@@ -51,4 +54,5 @@ public:
 	const Eigen::Vector3d& maxBound() const { return maxBound_; }
 	const Eigen::Vector3d& h() const { return h_; }
 	const Eigen::Vector3i& resolution() const { return resolution_; }
+	const Eigen::MatrixX3d& positions() const { return positions_; }
 };

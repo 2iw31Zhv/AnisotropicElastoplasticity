@@ -22,7 +22,7 @@ bool pre_draw(viewer::Viewer &viewer)
 }
 void simulate()
 {
-	solver.solve(0.001, 100.0, 0.95);
+	solver.solve(0.01, 100.0, 0.95);
 }
 bool key_down(igl::viewer::Viewer& viewer, unsigned char key, int modifier)
 {
@@ -38,7 +38,7 @@ int main()
 {
 	viewer::Viewer viewer;
 
-	ParticleSystem ps = ParticleSystem::SandBall(Vector3d(0.0, 0.0, 0.0), 1.0, 1e4);
+	ParticleSystem ps = ParticleSystem::SandBall(Vector3d(0.0, 0.0, 0.0), 1.0, 1e3);
 	RegularGrid rg(Vector3d(-2.0, -2.0, -2.0),
 		Vector3d(2.0, 2.0, 2.0),
 		Vector3i(50, 50, 50));

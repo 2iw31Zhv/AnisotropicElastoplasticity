@@ -42,6 +42,8 @@ private:
 	void gridCollisionHandling_();
 	void updateDeformationGradients_();
 	void updateParticleVelocities_(double alpha, double Dt);
+
+	void updateAffineMomenta_();
 public:
 
 	std::mutex mtx_;
