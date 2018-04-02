@@ -98,7 +98,54 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 
 ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double radius, int sampleNumber)
 {
-	return SnowBall(center, radius, sampleNumber);
+	MatrixX3d positions;
+	positions.resize(sampleNumber, 3);
+
+	for (int i = 0; i < sampleNumber; ++i)
+	{
+		Vector3d tempPos;
+		while ((tempPos = Vector3d::Random()).norm() > 1.0);
+
+		positions.row(i) = center + radius * tempPos;
+	}
+
+	MatrixX3d velocities;
+	velocities.resize(sampleNumber, 3);
+	velocities.setZero();
+
+	vector<Matrix3d> elasticDeformationGradients;
+	vector<Matrix3d> plasticDeformationGradients;
+	vector<Matrix3d> affineMomenta;
+
+	for (int i = 0; i < sampleNumber; ++i)
+	{
+		elasticDeformationGradients.push_back(Matrix3d::Identity());
+		plasticDeformationGradients.push_back(Matrix3d::Identity());
+		affineMomenta.push_back(Matrix3d::Zero());
+	}
+
+	double totalMass = 2200 * 3.14 * radius * radius * radius;
+
+	VectorXd masses(sampleNumber);
+	masses.setOnes();
+	masses *= totalMass / sampleNumber;
+	VectorXd volumes(sampleNumber);
+	volumes.setOnes();
+	VectorXd densities(sampleNumber);
+	densities.setOnes();
+
+	return ParticleSystem(velocities,
+		positions,
+		elasticDeformationGradients,
+		plasticDeformationGradients,
+		masses,
+		volumes,
+		densities,
+		3.537e5,
+		0.3,
+		2.5e-2, // not used 
+		7.5e-3, // not used
+		0.2); // not used
 }
 
 void ParticleSystem::updateViewer()

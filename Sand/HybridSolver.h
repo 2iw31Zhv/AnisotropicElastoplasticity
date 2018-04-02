@@ -17,6 +17,12 @@ namespace igl
 using LevelSet = std::function<double(const Eigen::Vector3d&)>;
 using DLevelSet = std::function<Eigen::Vector3d(const Eigen::Vector3d&)>;
 
+enum MaterialType
+{
+	SNOW = 0,
+	SAND
+};
+
 class HybridSolver
 {
 private:
@@ -38,7 +44,7 @@ private:
 
 	void evaluateInterpolationWeights_();
 	void particleToGrid_();
-	void computeGridForces_(double Dt);
+	void computeGridForces_(double Dt, MaterialType type);
 	void gridCollisionHandling_();
 	void updateDeformationGradients_();
 	void updateParticleVelocities_(double alpha, double Dt);

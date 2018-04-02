@@ -27,11 +27,11 @@ void HybridSolver::evaluateInterpolationWeights_()
 		int j_fl = static_cast<int>(posRef[1] / rg_->h()[1]);
 		int k_fl = static_cast<int>(posRef[2] / rg_->h()[2]);
 
-		for (int i = i_fl - 2; i <= i_fl + 2; ++i)
+		for (int i = i_fl - 1; i <= i_fl + 2; ++i)
 		{
-			for (int j = j_fl - 2; j <= j_fl + 2; ++j)
+			for (int j = j_fl - 1; j <= j_fl + 2; ++j)
 			{
-				for (int k = k_fl - 2; k <= k_fl + 2; ++k)
+				for (int k = k_fl - 1; k <= k_fl + 2; ++k)
 				{
 					if (0 <= i && i < rg_->resolution()[0] &&
 						0 <= j && j < rg_->resolution()[1] &&
@@ -48,19 +48,20 @@ void HybridSolver::evaluateInterpolationWeights_()
 						double ddyadic_k = Dcubic_B_spline(posRef[2] / rg_->h()[2] - k)
 							/ rg_->h()[2];
 
+						int index = rg_->toIndex(i, j, k);
 						if (dyadic_i > 0 && dyadic_j > 0 && dyadic_k > 0)
 						{
 							omegaTriplets.push_back(Triplet<double>(p,
-								rg_->toIndex(i, j, k),
+								index,
 								dyadic_i * dyadic_j * dyadic_k));
 							domegaTriplets_1.push_back(Triplet<double>(p,
-								rg_->toIndex(i, j, k),
+								index,
 								ddyadic_i * dyadic_j * dyadic_k));
 							domegaTriplets_2.push_back(Triplet<double>(p,
-								rg_->toIndex(i, j, k),
+								index,
 								dyadic_i * ddyadic_j * dyadic_k));
 							domegaTriplets_3.push_back(Triplet<double>(p,
-								rg_->toIndex(i, j, k),
+								index,
 								dyadic_i * dyadic_j * ddyadic_k));
 						}
 					}
@@ -129,7 +130,7 @@ void HybridSolver::particleToGrid_()
 	rg_->velocities = rg_->masses.asDiagonal().inverse() * momenta_i;
 }
 
-void HybridSolver::computeGridForces_(double Dt)
+void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 {
 	int numParticles = ps_->elasticDeformationGradients.size();
 	int numGrids = rg_->gridNumber();
@@ -153,10 +154,21 @@ void HybridSolver::computeGridForces_(double Dt)
 
 	for (int p = 0; p < numParticles; ++p)
 	{
-		double J_plastic = ps_->plasticDeformationGradients[p].determinant();
+		double lambda, mu;
 
-		double lambda = lambda0 * exp(hardeningCoeff * (1 - J_plastic));
-		double mu = mu0 * exp(hardeningCoeff * (1 - J_plastic));
+		if (type == SNOW)
+		{
+			double J_plastic = ps_->plasticDeformationGradients[p].determinant();
+
+			lambda = lambda0 * exp(hardeningCoeff * (1 - J_plastic));
+			mu = mu0 * exp(hardeningCoeff * (1 - J_plastic));
+		}
+		else if (type == SAND)
+		{
+			lambda = lambda0;
+			mu = mu0;
+		}
+		
 
 		const Vector3d& posRef = ps_->positions.row(p).transpose() - rg_->minBound();
 
@@ -172,16 +184,38 @@ void HybridSolver::computeGridForces_(double Dt)
 		MatrixX3d virtualEDG = EDG + EDG_modifier * EDG;
 		candidateElasticDeformationGradients_[p] = virtualEDG;
 		
-		// polar decomposition
 		JacobiSVD<Matrix3d> svd(virtualEDG, ComputeFullU | ComputeFullV);
-		Matrix3d stretchMatrix = svd.matrixV() * svd.singularValues().asDiagonal()
-			* svd.matrixV().transpose();
-		Matrix3d rotationMatrix = svd.matrixU() * svd.matrixV().transpose();
 
-		Matrix3d cauchyStress = ps_->volumes[p] * (2.0 * mu * (virtualEDG - rotationMatrix)
-			+ lambda * (virtualEDG.determinant() - 1.0)
-			* virtualEDG.determinant() * virtualEDG.transpose().inverse())
-			* EDG.transpose();
+		Matrix3d cauchyStress;
+
+		cauchyStress.setZero();
+
+		if (type == SNOW)
+		{
+			// polar decomposition
+			const Matrix3d& stretchMatrix = svd.matrixV() * svd.singularValues().asDiagonal()
+				* svd.matrixV().transpose();
+			const Matrix3d& rotationMatrix = svd.matrixU() * svd.matrixV().transpose();
+
+			cauchyStress = ps_->volumes[p] * (2.0 * mu * (virtualEDG - rotationMatrix)
+				+ lambda * (virtualEDG.determinant() - 1.0)
+				* virtualEDG.determinant() * virtualEDG.transpose().inverse())
+				* EDG.transpose();
+		}
+		else if (type == SAND)
+		{
+			const Vector3d& Sigma = svd.singularValues();
+
+			Vector3d lnSigma = Vector3d(log(Sigma[0]), log(Sigma[1]), log(Sigma[2]));
+
+			cauchyStress = ps_->volumes[p] * (
+				svd.matrixU() * (
+					2 * mu * (Sigma.cwiseInverse().cwiseProduct(lnSigma))
+					+ lambda * lnSigma.sum() * Sigma.cwiseInverse()
+					).asDiagonal()
+				* svd.matrixV().transpose()
+				) * EDG.transpose();
+		}
 
 		cauchyStress_11_[p] = cauchyStress(0, 0);
 		cauchyStress_12_[p] = cauchyStress(0, 1);
@@ -332,7 +366,7 @@ void HybridSolver::solve(double Dt, double maxt, double alpha)
 	{
 		clog << "time: " << t << endl;
 		clog << "compute grid forces...";
-		computeGridForces_(Dt);
+		computeGridForces_(Dt, SAND);
 		clog << "done!\n";
 		clog << "update grid velocities...";
 		rg_->velocities += Dt * rg_->masses.asDiagonal() * rg_->forces;
