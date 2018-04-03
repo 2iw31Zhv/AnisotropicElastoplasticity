@@ -167,6 +167,7 @@ ParticleSystem ParticleSystem::SandBlock(
 	MatrixX3d positions;
 	positions.resize(sampleNumber, 3);
 
+	cout << bmin.z() << endl;
 	Vector3d holeCenter(bmin.x(), bmin.y(), 0.5 * (bmax.z() + bmin.z()));
 	if (holeRadius * 2.0 >= bmax.z() - bmin.z())
 	{
@@ -174,19 +175,26 @@ ParticleSystem ParticleSystem::SandBlock(
 		exit(-1);
 	}
 
-	default_random_engine generator1(unsigned(time(0))), generator2(unsigned(time(0))),
-		generator3(unsigned(time(0)));
+	default_random_engine generator1(unsigned(time(0)));
 	uniform_real_distribution<double> distribution1(bmin.x(), bmax.x()),
 		distribution2(bmin.y(), bmax.y()), distribution3(bmin.z(), bmax.z());
 
-	for (int i = 0; i < sampleNumber; ++i)
+	int i = 0;
+	while(i < sampleNumber)
 	{
 		Vector3d tempPos;
-		while (((tempPos = Vector3d(
-			distribution1(generator1),
-			distribution2(generator1),
-			distribution3(generator1)) - holeCenter).norm() < holeRadius));
-		positions.row(i) = tempPos;
+		double x = distribution1(generator1);
+		double y = distribution2(generator1);
+		double z = distribution3(generator1);
+		tempPos = Vector3d(x, y, z);
+		
+		if ((tempPos - holeCenter).norm() >= holeRadius)
+		{
+			//cout << x << ", " << y << ", " << z << endl;
+			positions.row(i) = tempPos;
+			i++;
+		}
+		
 	}
 
 

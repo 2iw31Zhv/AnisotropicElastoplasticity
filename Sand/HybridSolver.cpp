@@ -478,9 +478,9 @@ void HybridSolver::updateViewer()
 	c.col(1).setOnes();
 
 	e0.row(0) = Vector3d(-10.0, -10.0, 0.0);
-	e0.row(1) = Vector3d(-10.0, 10.0, 0.0);
-	e0.row(2) = Vector3d(10.0, 10.0, 0.0);
-	e0.row(3) = Vector3d(10.0, -10.0, 0.0);
+	e0.row(1) = Vector3d(-10.0, 1.0, 0.0);
+	e0.row(2) = Vector3d(1.0, 1.0, 0.0);
+	e0.row(3) = Vector3d(1.0, -10.0, 0.0);
 
 	e1.row(0) = e0.row(1);
 	e1.row(1) = e0.row(2);
@@ -489,4 +489,5 @@ void HybridSolver::updateViewer()
 
 	viewer_->data.add_edges(e0, e1, c);
 	mtx_.unlock();
+	//viewer_->save_scene();
 }

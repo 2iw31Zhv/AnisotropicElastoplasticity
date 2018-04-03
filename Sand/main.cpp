@@ -44,11 +44,11 @@ int main()
 	Vector3d(0.0, 0.0, 0.0),
 		Vector3d(1.0, 1.0, 2.0),
 		0.5,
-		1e4);
+		1e5);
 
-	RegularGrid rg(Vector3d(-7.5, -7.5, -0.5),
-		Vector3d(2.5, 2.5, 7.5),
-		Vector3i(100, 100, 80));
+	RegularGrid rg(Vector3d(-8.5, -8.5, -0.5),
+		Vector3d(1.5, 1.5, 4.5),
+		Vector3i(100, 100, 50));
 
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
@@ -68,9 +68,9 @@ int main()
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
 	viewer.core.show_lines = true;
-	viewer.core.light_position = Vector3f(-0.3, -0.3, 3.0);
 	viewer.callback_key_down = &key_down;
 	viewer.callback_pre_draw = &pre_draw;
+	
 	viewer.launch();
 	return 0;
 }
