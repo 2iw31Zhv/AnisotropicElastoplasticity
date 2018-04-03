@@ -22,6 +22,7 @@ public:
 	Eigen::VectorXd masses;
 	Eigen::VectorXd volumes;
 	Eigen::VectorXd densities;
+	Eigen::VectorXd plasticAmount;
 
 	Eigen::MatrixX3d velocities;
 	Eigen::MatrixX3d positions;
@@ -47,6 +48,7 @@ public:
 		const Eigen::VectorXd& masses,
 		const Eigen::VectorXd& volumes,
 		const Eigen::VectorXd& densities,
+		const Eigen::VectorXd& plasticAmount,
 		double youngsModulus,
 		double poissonRatio,
 		double criticalCompression,

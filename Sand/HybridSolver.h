@@ -46,7 +46,7 @@ private:
 	void particleToGrid_();
 	void computeGridForces_(double Dt, MaterialType type);
 	void gridCollisionHandling_();
-	void updateDeformationGradients_();
+	void updateDeformationGradients_(MaterialType type);
 	void updateParticleVelocities_(double alpha, double Dt);
 
 	void updateAffineMomenta_();

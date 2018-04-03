@@ -299,7 +299,7 @@ void HybridSolver::gridCollisionHandling_()
 
 }
 
-void HybridSolver::updateDeformationGradients_()
+void HybridSolver::updateDeformationGradients_(MaterialType type)
 {
 	for (int p = 0; p < ps_->elasticDeformationGradients.size(); ++p)
 	{
@@ -311,13 +311,59 @@ void HybridSolver::updateDeformationGradients_()
 		Vector3d Sigma = svd.singularValues();
 		Matrix3d V = svd.matrixV();
 		
-		Sigma[0] = clamp(Sigma[0], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
-		Sigma[1] = clamp(Sigma[1], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
-		Sigma[2] = clamp(Sigma[2], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+		if (type == SNOW)
+		{
+			Sigma[0] = clamp(Sigma[0], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+			Sigma[1] = clamp(Sigma[1], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+			Sigma[2] = clamp(Sigma[2], 1.0 - ps_->criticalCompression, 1.0 + ps_->criticalStretch);
+		}
+		else if (type == SAND)
+		{
+			double E0 = ps_->youngsModulus;
+			double nu0 = ps_->poissonRatio;
 
+			double lambda = E0 * nu0 / (1.0 + nu0) / (1.0 - 2.0 * nu0);
+			double mu = E0 / 2.0 / (1.0 + nu0);
+
+			// hardening update
+			double h0 = 35.0;
+			double h1 = 9.0;
+			double h2 = 0.2;
+			double h3 = 10.0;
+
+			double frictionAngle = (h0 + (h1 * ps_->plasticAmount[p] - h3)
+				* exp(-h2 * ps_->plasticAmount[p])) * igl::PI / 180.0;
+
+			double hardeningCoeff = sqrt(2.0 / 3.0) * 2.0 * sin(frictionAngle)
+				/ (3.0 - sin(frictionAngle));
+
+			Vector3d lnSigma(log(Sigma[0]), log(Sigma[1]), log(Sigma[2]));
+			Vector3d varlnSigma = lnSigma - lnSigma.sum() / 3.0 * Vector3d::Ones();
+			double plasticDeformationAmount =
+				varlnSigma.norm() + (3.0 * lambda + 2.0 * mu) / 2.0 / mu
+				* varlnSigma.sum() * hardeningCoeff;
+			
+			if (plasticDeformationAmount <= 0.0)
+			{
+				ps_->elasticDeformationGradients[p] = candidateElasticDeformationGradients_[p];
+			}
+			else if (varlnSigma.norm() == 0.0 || lnSigma.sum() > 0.0)
+			{
+				ps_->elasticDeformationGradients[p] = U * V.transpose();
+				
+			}
+			else
+			{
+				Vector3d Hp = lnSigma 
+					- plasticDeformationAmount * varlnSigma / varlnSigma.norm();
+				Sigma = Vector3d(exp(Hp[0]), exp(Hp[1]), exp(Hp[2]));
+				ps_->plasticAmount[p] += plasticDeformationAmount;
+			}
+		}
 		ps_->elasticDeformationGradients[p] = U * Sigma.asDiagonal() * V.transpose();
 		ps_->plasticDeformationGradients[p] = V * Sigma.cwiseInverse().asDiagonal()
 			* U.transpose() * totalDeformationGradient;
+
 
 	}
 }
@@ -375,7 +421,7 @@ void HybridSolver::solve(double Dt, double maxt, double alpha)
 		gridCollisionHandling_();
 		clog << "done!\n";
 		clog << "update deformation gradients...";
-		updateDeformationGradients_();
+		updateDeformationGradients_(SAND);
 		clog << "done!\n";
 		clog << "update particle velocities...";
 		updateParticleVelocities_(alpha, Dt);

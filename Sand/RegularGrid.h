@@ -2,7 +2,7 @@
 #include <vector>
 #include <tuple>
 #include <Eigen/Core>
-
+#include <mutex>
 
 namespace igl
 {
@@ -30,6 +30,7 @@ private:
 
 	void initializeRenderingData_();
 	
+	std::mutex mtx_;
 public:
 	void recomputeColors();
 	Eigen::MatrixX3d velocities;

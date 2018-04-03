@@ -14,6 +14,7 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	const Eigen::VectorXd& masses,
 	const Eigen::VectorXd& volumes,
 	const Eigen::VectorXd& densities,
+	const Eigen::VectorXd& plasticAmount,
 	double youngsModulus,
 	double poissonRatio,
 	double criticalCompression,
@@ -26,6 +27,7 @@ ParticleSystem::ParticleSystem(const Eigen::MatrixX3d& velocities,
 	masses(masses),
 	volumes(volumes),
 	densities(densities),
+	plasticAmount(plasticAmount),
 	youngsModulus(youngsModulus),
 	poissonRatio(poissonRatio),
 	criticalCompression(criticalCompression),
@@ -82,6 +84,9 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 	VectorXd densities(sampleNumber);
 	densities.setOnes();
 
+	VectorXd plasticAmount(sampleNumber);
+	plasticAmount.setZero();
+
 	return ParticleSystem(velocities,
 		positions,
 		elasticDeformationGradients,
@@ -89,6 +94,7 @@ ParticleSystem ParticleSystem::SnowBall(const Eigen::Vector3d & center,
 		masses,
 		volumes,
 		densities,
+		plasticAmount,
 		1.4e5,
 		0.2,
 		2.5e-2,
@@ -134,6 +140,9 @@ ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double r
 	VectorXd densities(sampleNumber);
 	densities.setOnes();
 
+	VectorXd plasticAmount(sampleNumber);
+	plasticAmount.setZero();
+
 	return ParticleSystem(velocities,
 		positions,
 		elasticDeformationGradients,
@@ -141,6 +150,7 @@ ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double r
 		masses,
 		volumes,
 		densities,
+		plasticAmount,
 		3.537e5,
 		0.3,
 		2.5e-2, // not used 

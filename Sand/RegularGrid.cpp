@@ -199,6 +199,8 @@ std::tuple<int, int, int> RegularGrid::toCoordinate(int index) const
 void RegularGrid::updateViewer()
 {
 	using namespace viewer;
+	mtx_.lock();
 	recomputeColors();
+	mtx_.unlock();
 	viewer_->data.add_edges(points_1_, points_2_, colors_);
 }

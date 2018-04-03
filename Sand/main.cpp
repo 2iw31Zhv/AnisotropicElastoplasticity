@@ -38,10 +38,10 @@ int main()
 {
 	viewer::Viewer viewer;
 
-	ParticleSystem ps = ParticleSystem::SandBall(Vector3d(0.0, 0.0, 0.0), 1.0, 1e4);
-	RegularGrid rg(Vector3d(-2.0, -2.0, -2.0),
-		Vector3d(2.0, 2.0, 2.0),
-		Vector3i(50, 50, 50));
+	ParticleSystem ps = ParticleSystem::SandBall(Vector3d(0.0, 0.0, -1.2), 0.5, 1e4);
+	RegularGrid rg(Vector3d(-8.0, -8.0, -2.0),
+		Vector3d(8.0, 8.0, 2.0),
+		Vector3i(200, 200, 50));
 
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
