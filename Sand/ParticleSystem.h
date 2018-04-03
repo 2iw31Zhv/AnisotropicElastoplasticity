@@ -63,6 +63,11 @@ public:
 		double radius,
 		int sampleNumber);
 
+	static ParticleSystem SandBlock(const Eigen::Vector3d& bmin,
+		const Eigen::Vector3d& bmax,
+		double holeRadius,
+		int sampleNumber);
+
 	void bindViewer(igl::viewer::Viewer * viewer) { viewer_ = viewer; }
 	void updateViewer();
 	

@@ -158,6 +158,82 @@ ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double r
 		0.2); // not used
 }
 
+ParticleSystem ParticleSystem::SandBlock(
+	const Eigen::Vector3d & bmin, 
+	const Eigen::Vector3d & bmax, 
+	double holeRadius,
+	int sampleNumber)
+{
+	MatrixX3d positions;
+	positions.resize(sampleNumber, 3);
+
+	Vector3d holeCenter(bmin.x(), bmin.y(), 0.5 * (bmax.z() + bmin.z()));
+	if (holeRadius * 2.0 >= bmax.z() - bmin.z())
+	{
+		cerr << "[ERROR]: the hole is too big." << __LINE__ << endl;
+		exit(-1);
+	}
+
+	default_random_engine generator1(unsigned(time(0))), generator2(unsigned(time(0))),
+		generator3(unsigned(time(0)));
+	uniform_real_distribution<double> distribution1(bmin.x(), bmax.x()),
+		distribution2(bmin.y(), bmax.y()), distribution3(bmin.z(), bmax.z());
+
+	for (int i = 0; i < sampleNumber; ++i)
+	{
+		Vector3d tempPos;
+		while (((tempPos = Vector3d(
+			distribution1(generator1),
+			distribution2(generator1),
+			distribution3(generator1)) - holeCenter).norm() < holeRadius));
+		positions.row(i) = tempPos;
+	}
+
+
+	MatrixX3d velocities;
+	velocities.resize(sampleNumber, 3);
+	velocities.setZero();
+
+	vector<Matrix3d> elasticDeformationGradients;
+	vector<Matrix3d> plasticDeformationGradients;
+	vector<Matrix3d> affineMomenta;
+
+	for (int i = 0; i < sampleNumber; ++i)
+	{
+		elasticDeformationGradients.push_back(Matrix3d::Identity());
+		plasticDeformationGradients.push_back(Matrix3d::Identity());
+		affineMomenta.push_back(Matrix3d::Zero());
+	}
+
+	double totalMass = 2200 * ((bmax - bmin).prod() - 0.25 * igl::PI * holeRadius * holeRadius
+		* holeRadius);
+
+	VectorXd masses(sampleNumber);
+	masses.setOnes();
+	masses *= totalMass / sampleNumber;
+	VectorXd volumes(sampleNumber);
+	volumes.setOnes();
+	VectorXd densities(sampleNumber);
+	densities.setOnes();
+
+	VectorXd plasticAmount(sampleNumber);
+	plasticAmount.setZero();
+
+	return ParticleSystem(velocities,
+		positions,
+		elasticDeformationGradients,
+		plasticDeformationGradients,
+		masses,
+		volumes,
+		densities,
+		plasticAmount,
+		3.537e5,
+		0.3,
+		2.5e-2, // not used 
+		7.5e-3, // not used
+		0.2); // not used
+}
+
 void ParticleSystem::updateViewer()
 {
 	viewer_->data.add_points(positions, colors_);

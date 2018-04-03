@@ -477,10 +477,10 @@ void HybridSolver::updateViewer()
 	c.setZero();
 	c.col(1).setOnes();
 
-	e0.row(0) = Vector3d(-10.0, -10.0, -1.8);
-	e0.row(1) = Vector3d(-10.0, 10.0, -1.8);
-	e0.row(2) = Vector3d(10.0, 10.0, -1.8);
-	e0.row(3) = Vector3d(10.0, -10.0, -1.8);
+	e0.row(0) = Vector3d(-10.0, -10.0, 0.0);
+	e0.row(1) = Vector3d(-10.0, 10.0, 0.0);
+	e0.row(2) = Vector3d(10.0, 10.0, 0.0);
+	e0.row(3) = Vector3d(10.0, -10.0, 0.0);
 
 	e1.row(0) = e0.row(1);
 	e1.row(1) = e0.row(2);
