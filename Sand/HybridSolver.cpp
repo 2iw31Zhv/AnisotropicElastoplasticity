@@ -341,16 +341,16 @@ void HybridSolver::updateDeformationGradients_(MaterialType type)
 			Vector3d varlnSigma = lnSigma - lnSigma.sum() / 3.0 * Vector3d::Ones();
 			double plasticDeformationAmount =
 				varlnSigma.norm() + (3.0 * lambda + 2.0 * mu) / 2.0 / mu
-				* varlnSigma.sum() * hardeningCoeff;
+				* lnSigma.sum() * hardeningCoeff;
 			
 			if (plasticDeformationAmount <= 0.0)
 			{
-				ps_->elasticDeformationGradients[p] = candidateElasticDeformationGradients_[p];
+				// do nothing Sigma = Sigma
 			}
 			else if (varlnSigma.norm() == 0.0 || lnSigma.sum() > 0.0)
 			{
-				ps_->elasticDeformationGradients[p] = U * V.transpose();
-				
+				Sigma = Vector3d::Ones();
+				ps_->plasticAmount[p] += lnSigma.norm();
 			}
 			else
 			{
@@ -406,7 +406,7 @@ void HybridSolver::solve(double Dt, double maxt, double alpha)
 	clog << "done!\n";
 
 	double t = 0.0;
-
+	//int step = 0;
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{

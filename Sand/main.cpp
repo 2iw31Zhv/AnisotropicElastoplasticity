@@ -22,7 +22,7 @@ bool pre_draw(viewer::Viewer &viewer)
 }
 void simulate()
 {
-	solver.solve(1e-3, 100.0, 0.95);
+	solver.solve(1e-4, 100.0, 0.95);
 }
 
 bool key_down(igl::viewer::Viewer& viewer, unsigned char key, int modifier)
@@ -63,7 +63,7 @@ int main()
 
 	solver.bindViewer(&viewer);
 
-
+	
 	viewer.core.point_size = 1.0;
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
