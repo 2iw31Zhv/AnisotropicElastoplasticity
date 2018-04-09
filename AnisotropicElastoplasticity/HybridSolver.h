@@ -5,6 +5,7 @@
 
 class ParticleSystem;
 class RegularGrid;
+class LagrangianMesh;
 
 namespace igl
 {
@@ -28,6 +29,7 @@ class HybridSolver
 private:
 	ParticleSystem * ps_;
 	RegularGrid * rg_;
+	LagrangianMesh * mesh_;
 
 	igl::viewer::Viewer * viewer_;
 
@@ -58,6 +60,7 @@ public:
 
 	void setParticleSystem(ParticleSystem * ps) { ps_ = ps; }
 	void setRegularGrid(RegularGrid * rg) { rg_ = rg; }
+	void setLagrangianMesh(LagrangianMesh * mesh) { mesh_ = mesh; }
 	void setLevelSet(const LevelSet& phi, const DLevelSet& dphi) { phi_ = phi; dphi_ = dphi; }
 	void solve(double Dt, double maxt, double alpha);
 

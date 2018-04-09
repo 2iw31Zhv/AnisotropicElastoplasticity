@@ -4,6 +4,7 @@
 #include <igl/viewer/Viewer.h>
 #include "ParticleSystem.h"
 #include "RegularGrid.h"
+#include "LagrangianMesh.h"
 #include "HybridSolver.h"
 #include "LevelSet.h"
 #include <thread>
@@ -50,9 +51,11 @@ int main()
 		Vector3d(1.5, 1.5, 4.5),
 		Vector3i(100, 100, 50));
 
+	LagrangianMesh mesh = LagrangianMesh::ObjMesh("square_random.obj");
+
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
-	
+	solver.setLagrangianMesh(&mesh);
 
 	using namespace std::placeholders;
 	//LevelSet gls_m00 = bind(groundLevelSet, _1, 0.0);

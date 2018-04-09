@@ -1,6 +1,7 @@
 #include "HybridSolver.h"
 #include "ParticleSystem.h"
 #include "RegularGrid.h"
+#include "LagrangianMesh.h"
 #include <vector>
 #include <igl/viewer/Viewer.h>
 #include "interpolation.h"
@@ -460,6 +461,11 @@ void HybridSolver::bindViewer(igl::viewer::Viewer * viewer)
 	{
 		rg_->bindViewer(viewer);
 	}
+
+	if (mesh_ != nullptr)
+	{
+		mesh_->bindViewer(viewer);
+	}
 }
 
 void HybridSolver::updateViewer()
@@ -468,6 +474,7 @@ void HybridSolver::updateViewer()
 	viewer_->data.clear();
 	mtx_.lock();
 	ps_->updateViewer();
+	mesh_->updateViewer();
 	//rg_->updateViewer();
 	MatrixX3d e0, e1, c;
 	e0.resize(4, 3);
