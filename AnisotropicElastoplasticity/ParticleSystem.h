@@ -16,7 +16,7 @@ private:
 	igl::viewer::Viewer * viewer_;
 
 	Eigen::MatrixX3d colors_;
-	void sampleSandColor_();
+	
 public:
 
 	Eigen::VectorXd masses;
@@ -53,7 +53,8 @@ public:
 		double poissonRatio,
 		double criticalCompression,
 		double criticalStretch,
-		double friction);
+		double friction,
+		const Eigen::MatrixX3d& colors);
 
 	static ParticleSystem SnowBall(const Eigen::Vector3d& center,
 		double radius,
@@ -68,7 +69,11 @@ public:
 		double holeRadius,
 		int sampleNumber);
 
+	static ParticleSystem SandCylinder(const Eigen::Vector3d& baseCenter,
+		double radius,
+		double height,
+		int sampleNumber);
+
 	void bindViewer(igl::viewer::Viewer * viewer) { viewer_ = viewer; }
 	void updateViewer();
-	
 };

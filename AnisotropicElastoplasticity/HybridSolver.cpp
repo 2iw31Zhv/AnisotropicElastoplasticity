@@ -475,26 +475,26 @@ void HybridSolver::updateViewer()
 	mtx_.lock();
 	ps_->updateViewer();
 	mesh_->updateViewer();
-	//rg_->updateViewer();
-	MatrixX3d e0, e1, c;
-	e0.resize(4, 3);
-	e1.resize(4, 3);
-	c.resize(4, 3);
 
-	c.setZero();
-	c.col(1).setOnes();
+	//MatrixX3d e0, e1, c;
+	//e0.resize(4, 3);
+	//e1.resize(4, 3);
+	//c.resize(4, 3);
 
-	e0.row(0) = Vector3d(-10.0, -10.0, 0.0);
-	e0.row(1) = Vector3d(-10.0, 1.0, 0.0);
-	e0.row(2) = Vector3d(1.0, 1.0, 0.0);
-	e0.row(3) = Vector3d(1.0, -10.0, 0.0);
+	//c.setZero();
+	//c.col(1).setOnes();
 
-	e1.row(0) = e0.row(1);
-	e1.row(1) = e0.row(2);
-	e1.row(2) = e0.row(3);
-	e1.row(3) = e0.row(0);
+	//e0.row(0) = Vector3d(-10.0, -10.0, 0.0);
+	//e0.row(1) = Vector3d(-10.0, 1.0, 0.0);
+	//e0.row(2) = Vector3d(1.0, 1.0, 0.0);
+	//e0.row(3) = Vector3d(1.0, -10.0, 0.0);
 
-	viewer_->data.add_edges(e0, e1, c);
+	//e1.row(0) = e0.row(1);
+	//e1.row(1) = e0.row(2);
+	//e1.row(2) = e0.row(3);
+	//e1.row(3) = e0.row(0);
+
+	//viewer_->data.add_edges(e0, e1, c);
 	mtx_.unlock();
 	//viewer_->save_scene();
 }

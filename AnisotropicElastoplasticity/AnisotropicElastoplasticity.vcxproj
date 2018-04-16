@@ -116,6 +116,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="geometry.cpp" />
     <ClCompile Include="HybridSolver.cpp" />
     <ClCompile Include="interpolation.cpp" />
     <ClCompile Include="LagrangianMesh.cpp" />
@@ -125,6 +126,7 @@
     <ClCompile Include="RegularGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="geometry.h" />
     <ClInclude Include="HybridSolver.h" />
     <ClInclude Include="interpolation.h" />
     <ClInclude Include="LagrangianMesh.h" />

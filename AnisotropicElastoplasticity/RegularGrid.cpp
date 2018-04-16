@@ -1,33 +1,13 @@
 #include "RegularGrid.h"
 #include <iostream>
 #include <igl/viewer/Viewer.h>
+#include "interpolation.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace igl;
 
-static double hue2rgb(double p, double q, double t)
-{
-	if (t < 0) t += 1.0;
-	if (t > 1.0) t -= 1.0;
-	if (t < 1.0 / 6.0) return p + (q - p) * 6 * t;
-	if (t < 0.5) return q;
-	if (t < 2.0 / 3.0) return p + (q - p)*(2.0 / 3.0 - t) * 6;
-	return p;
-}
 
-static Vector3d hslToRgb(double h, double s, double l)
-{
-	Vector3d result(l, l, l);
-	if (s == 0)
-		return result;
-	double q = (l < 0.5 ? l*(1.0 + s) : l + s - l*s);
-	double p = 2.0*l - q;
-	result[0] = hue2rgb(p, q, h + 1.0 / 3.0);
-	result[1] = hue2rgb(p, q, h);
-	result[2] = hue2rgb(p, q, h - 1.0 / 3.0);
-	return result;
-}
 
 void RegularGrid::initializeRenderingData_()
 {

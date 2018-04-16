@@ -36,6 +36,9 @@
     <ClCompile Include="LagrangianMesh.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="geometry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ParticleSystem.h">
@@ -54,6 +57,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="LagrangianMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="geometry.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
