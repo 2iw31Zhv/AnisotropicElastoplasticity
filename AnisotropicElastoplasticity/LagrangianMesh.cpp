@@ -10,6 +10,74 @@
 using namespace std;
 using namespace Eigen;
 
+void LagrangianMesh::buildFaceWings_()
+{
+	int nfaces = faces.rows();
+	faceWings.resize(nfaces, 3);
+	for (int i = 0; i < nfaces; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			int result = -1;
+			int p1 = faces(i, (j + 1) % 3);
+			int p2 = faces(i, (j + 2) % 3);
+			for (int k = 0; k < nfaces; k++)
+			{
+				for (int l = 0; l < 3; l++)
+				{
+					if (faces(k, (l + 1) % 3) == p2 && faces(k, (l + 2) % 3) == p1)
+					{
+						result = faces(k, l);
+					}
+				}
+			}
+			faceWings(i, j) = result;
+		}
+	}
+}
+
+void LagrangianMesh::computeRestMetrics_()
+{
+	inverseMetrics.resize(faces.rows());
+
+	for (int i = 0; i < faces.rows(); ++i)
+	{
+		Vector3d v1 = vertexPositions.row(faces(i, 0));
+		Vector3d v2 = vertexPositions.row(faces(i, 1));
+		Vector3d v3 = vertexPositions.row(faces(i, 2));
+
+		double du1 = (v2 - v1).x();
+		double du2 = (v3 - v1).x();
+
+		double dv1 = (v2 - v1).y();
+		double dv2 = (v3 - v1).y();
+
+		Matrix2d metric;
+		metric(0, 0) = du1;
+		metric(0, 1) = du2;
+		metric(1, 0) = dv1;
+		metric(1, 1) = dv2;
+
+		inverseMetrics[i] = metric.inverse();
+	}
+}
+
+void LagrangianMesh::computeAreas_()
+{
+	areas.resize(faces.rows());
+	areas.setZero();
+
+	for (int i = 0; i < faces.rows(); ++i)
+	{
+		Vector3d v1 = vertexPositions.row(faces(i, 0));
+		Vector3d v2 = vertexPositions.row(faces(i, 1));
+		Vector3d v3 = vertexPositions.row(faces(i, 2));
+
+		double area = 0.5 * ((v2 - v1).cross(v3 - v1)).norm();
+		areas[i] = area;
+	}
+}
+
 LagrangianMesh::LagrangianMesh(
 	const Eigen::MatrixX3d & vertexPositions,
 	const Eigen::MatrixX3i & faces,
@@ -64,7 +132,9 @@ LagrangianMesh::LagrangianMesh(
 	colors_.resize(faces.rows(), 3);
 	colors_.setOnes();
 
-
+	buildFaceWings_();
+	computeAreas_();
+	computeRestMetrics_();
 }
 
 LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,

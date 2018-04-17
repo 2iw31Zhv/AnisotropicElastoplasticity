@@ -116,23 +116,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ClothElastic.cpp" />
     <ClCompile Include="geometry.cpp" />
     <ClCompile Include="HybridSolver.cpp" />
     <ClCompile Include="interpolation.cpp" />
     <ClCompile Include="LagrangianMesh.cpp" />
     <ClCompile Include="LevelSet.cpp" />
+    <ClCompile Include="LinearAlgebra.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MathExtensions.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="RegularGrid.cpp" />
+    <ClCompile Include="TriangleCondition.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ClothElastic.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="HybridSolver.h" />
     <ClInclude Include="interpolation.h" />
     <ClInclude Include="LagrangianMesh.h" />
     <ClInclude Include="LevelSet.h" />
+    <ClInclude Include="LinearAlgebra.h" />
+    <ClInclude Include="MathExtensions.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="RegularGrid.h" />
+    <ClInclude Include="TriangleCondition.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

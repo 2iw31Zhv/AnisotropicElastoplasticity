@@ -16,6 +16,11 @@ private:
 	igl::viewer::Viewer * viewer_;
 
 	Eigen::MatrixX3d colors_;
+
+	void buildFaceWings_();
+	void computeRestMetrics_();
+	void computeAreas_();
+
 public:
 	Eigen::MatrixX3d vertexPositions;
 	Eigen::MatrixX3d elementPositions;
@@ -40,6 +45,10 @@ public:
 	Eigen::MatrixX3d elementAffineMomenta_3;
 
 	Eigen::MatrixX3i faces;
+	Eigen::MatrixX3i faceWings;
+
+	Eigen::VectorXd areas;
+	std::vector< Eigen::Matrix2d> inverseMetrics;
 
 	std::vector<Eigen::Matrix3d> plasticDeformationGradient;
 	std::vector<Eigen::Matrix3d> elasticDeformationGradient;

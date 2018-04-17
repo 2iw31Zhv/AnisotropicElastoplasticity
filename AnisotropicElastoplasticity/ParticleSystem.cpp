@@ -197,13 +197,13 @@ ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double r
 
 	vector<Matrix3d> elasticDeformationGradients;
 	vector<Matrix3d> plasticDeformationGradients;
-	vector<Matrix3d> affineMomenta;
+	//vector<Matrix3d> affineMomenta;
 
 	for (int i = 0; i < sampleNumber; ++i)
 	{
 		elasticDeformationGradients.push_back(Matrix3d::Identity());
 		plasticDeformationGradients.push_back(Matrix3d::Identity());
-		affineMomenta.push_back(Matrix3d::Zero());
+		//affineMomenta.push_back(Matrix3d::Zero());
 	}
 
 	double totalMass = 2200 * 3.14 * radius * radius * radius;
@@ -284,13 +284,13 @@ ParticleSystem ParticleSystem::SandBlock(
 
 	vector<Matrix3d> elasticDeformationGradients;
 	vector<Matrix3d> plasticDeformationGradients;
-	vector<Matrix3d> affineMomenta;
+	//vector<Matrix3d> affineMomenta;
 
 	for (int i = 0; i < sampleNumber; ++i)
 	{
 		elasticDeformationGradients.push_back(Matrix3d::Identity());
 		plasticDeformationGradients.push_back(Matrix3d::Identity());
-		affineMomenta.push_back(Matrix3d::Zero());
+		//affineMomenta.push_back(Matrix3d::Zero());
 	}
 
 	double totalMass = 2200 * ((bmax - bmin).prod() - 0.25 * igl::PI * holeRadius * holeRadius
@@ -357,13 +357,13 @@ ParticleSystem ParticleSystem::SandCylinder(
 
 	vector<Matrix3d> elasticDeformationGradients;
 	vector<Matrix3d> plasticDeformationGradients;
-	vector<Matrix3d> affineMomenta;
+	//vector<Matrix3d> affineMomenta;
 
 	for (int i = 0; i < sampleNumber; ++i)
 	{
 		elasticDeformationGradients.push_back(Matrix3d::Identity());
 		plasticDeformationGradients.push_back(Matrix3d::Identity());
-		affineMomenta.push_back(Matrix3d::Zero());
+		//affineMomenta.push_back(Matrix3d::Zero());
 	}
 
 	double totalMass = 2200 * igl::PI * radius * radius * height;

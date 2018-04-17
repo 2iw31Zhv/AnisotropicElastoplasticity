@@ -6,6 +6,7 @@
 #include <igl/viewer/Viewer.h>
 #include "interpolation.h"
 #include <Eigen/Dense>
+#include "ClothElastic.h"
 
 using namespace std;
 using namespace Eigen;
@@ -13,16 +14,21 @@ using namespace igl;
 
 #define AFFINE_PIC
 
-void HybridSolver::evaluateInterpolationWeights_()
+void HybridSolver::evaluateInterpolationWeights_(
+	Eigen::SparseMatrix<double>& omegas,
+	Eigen::SparseMatrix<double>& domegas_1,
+	Eigen::SparseMatrix<double>& domegas_2,
+	Eigen::SparseMatrix<double>& domegas_3,
+	const Eigen::MatrixX3d& particlePositions)
 {
 	vector<Triplet<double>> omegaTriplets;
 	vector<Triplet<double>> domegaTriplets_1;
 	vector<Triplet<double>> domegaTriplets_2;
 	vector<Triplet<double>> domegaTriplets_3;
 
-	for (int p = 0; p < ps_->positions.rows(); ++p)
+	for (int p = 0; p < particlePositions.rows(); ++p)
 	{
-		const Vector3d& position = ps_->positions.row(p);
+		const Vector3d& position = particlePositions.row(p);
 		const Vector3d& posRef = position - rg_->minBound();
 		int i_fl = static_cast<int>(posRef[0] / rg_->h()[0]);
 		int j_fl = static_cast<int>(posRef[1] / rg_->h()[1]);
@@ -71,43 +77,51 @@ void HybridSolver::evaluateInterpolationWeights_()
 		}
 	}
 
-	omegas_.resize(ps_->masses.size(), rg_->masses.size());
-	domegas_1_.resize(ps_->masses.size(), rg_->masses.size());
-	domegas_2_.resize(ps_->masses.size(), rg_->masses.size());
-	domegas_3_.resize(ps_->masses.size(), rg_->masses.size());
+	int Np = particlePositions.rows();
+	omegas.resize(Np, rg_->masses.size());
+	domegas_1.resize(Np, rg_->masses.size());
+	domegas_2.resize(Np, rg_->masses.size());
+	domegas_3.resize(Np, rg_->masses.size());
 
-	omegas_.setZero();
-	domegas_1_.setZero();
-	domegas_2_.setZero();
-	domegas_3_.setZero();
+	omegas.setZero();
+	domegas_1.setZero();
+	domegas_2.setZero();
+	domegas_3.setZero();
 
-	omegas_.setFromTriplets(omegaTriplets.begin(), omegaTriplets.end());
-	domegas_1_.setFromTriplets(domegaTriplets_1.begin(), domegaTriplets_1.end());
-	domegas_2_.setFromTriplets(domegaTriplets_2.begin(), domegaTriplets_2.end());
-	domegas_3_.setFromTriplets(domegaTriplets_3.begin(), domegaTriplets_3.end());
+	omegas.setFromTriplets(omegaTriplets.begin(), omegaTriplets.end());
+	domegas_1.setFromTriplets(domegaTriplets_1.begin(), domegaTriplets_1.end());
+	domegas_2.setFromTriplets(domegaTriplets_2.begin(), domegaTriplets_2.end());
+	domegas_3.setFromTriplets(domegaTriplets_3.begin(), domegaTriplets_3.end());
 
 }
 
-void HybridSolver::particleToGrid_()
+void HybridSolver::particleToGrid_(
+	Eigen::VectorXd& gridMasses,
+	Eigen::MatrixX3d& gridVelocities,
+	const Eigen::VectorXd& particleMasses,
+	const Eigen::MatrixX3d& particleVelocities,
+	const Eigen::MatrixX3d& particlePositions,
+	const Eigen::MatrixX3d& particleAffineMomenta_1,
+	const Eigen::MatrixX3d& particleAffineMomenta_2,
+	const Eigen::MatrixX3d& particleAffineMomenta_3,
+	const Eigen::SparseMatrix<double>& omegas)
 {
-	rg_->masses = omegas_.transpose() * ps_->masses;
-	rg_->recomputeColors();
+	gridMasses += omegas.transpose() * particleMasses;
 
-
-	const MatrixX3d& momenta_p = ps_->masses.asDiagonal() * ps_->velocities;
-	MatrixX3d momenta_i = omegas_.transpose() * momenta_p;
+	const MatrixX3d& momenta_p = particleMasses.asDiagonal() * particleVelocities;
+	MatrixX3d momenta_i = omegas.transpose() * momenta_p;
 
 #if defined(AFFINE_PIC)
 	double inertiaTensorRatio = 3.0 / pow(rg_->h().prod(), 2.0 / 3.0);
 	const MatrixX3d& cellAffineMomenta_1 = inertiaTensorRatio
-		* omegas_.transpose() * ps_->masses.asDiagonal()
-		* ps_->affineMomenta_1;
+		* omegas.transpose() * particleMasses.asDiagonal()
+		* particleAffineMomenta_1;
 	const MatrixX3d& cellAffineMomenta_2 = inertiaTensorRatio
-		* omegas_.transpose() * ps_->masses.asDiagonal()
-		* ps_->affineMomenta_2;
+		* omegas.transpose() * particleMasses.asDiagonal()
+		* particleAffineMomenta_2;
 	const MatrixX3d& cellAffineMomenta_3 = inertiaTensorRatio
-		* omegas_.transpose() * ps_->masses.asDiagonal()
-		* ps_->affineMomenta_3;
+		* omegas.transpose() * particleMasses.asDiagonal()
+		* particleAffineMomenta_3;
 
 	momenta_i.col(0) += (cellAffineMomenta_1.array() * rg_->positions().array())
 		.rowwise().sum().matrix();
@@ -116,19 +130,19 @@ void HybridSolver::particleToGrid_()
 	momenta_i.col(2) += (cellAffineMomenta_3.array() * rg_->positions().array())
 		.rowwise().sum().matrix();
 
-	momenta_i.col(0) -= inertiaTensorRatio * omegas_.transpose()
-		* ps_->masses.cwiseProduct(
-		(ps_->affineMomenta_1.array() * ps_->positions.array()).rowwise().sum().matrix());
-	momenta_i.col(1) -= inertiaTensorRatio * omegas_.transpose()
-		* ps_->masses.cwiseProduct(
-		(ps_->affineMomenta_2.array() * ps_->positions.array()).rowwise().sum().matrix());
-	momenta_i.col(2) -= inertiaTensorRatio * omegas_.transpose()
-		* ps_->masses.cwiseProduct(
-		(ps_->affineMomenta_3.array() * ps_->positions.array()).rowwise().sum().matrix());
+	momenta_i.col(0) -= inertiaTensorRatio * omegas.transpose()
+		* particleMasses.cwiseProduct(
+		(particleAffineMomenta_1.array() * particlePositions.array()).rowwise().sum().matrix());
+	momenta_i.col(1) -= inertiaTensorRatio * omegas.transpose()
+		* particleMasses.cwiseProduct(
+		(particleAffineMomenta_2.array() * particlePositions.array()).rowwise().sum().matrix());
+	momenta_i.col(2) -= inertiaTensorRatio * omegas.transpose()
+		* particleMasses.cwiseProduct(
+		(particleAffineMomenta_3.array() * particlePositions.array()).rowwise().sum().matrix());
 
 #endif
 	
-	rg_->velocities = rg_->masses.asDiagonal().inverse() * momenta_i;
+	gridVelocities += gridMasses.asDiagonal().inverse() * momenta_i;
 }
 
 void HybridSolver::computeGridForces_(double Dt, MaterialType type)
@@ -249,6 +263,29 @@ void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 	{
 		rg_->forces.row(c) += rg_->masses[c] * Vector3d(0.0, 0.0, -9.8);
 	}
+
+	// evaluate the force regarding the mesh
+	MatrixX3d vertexInPlaneForces;
+
+	double elasticEnergy = computeClothElasticEnergy(
+		mesh_->vertexVelocities,
+		mesh_->vertexPositions,
+		mesh_->faces,
+		mesh_->faceWings,
+		mesh_->inverseMetrics,
+		mesh_->areas,
+		0.2,
+		1e-3,
+		1e-9,
+		&vertexInPlaneForces,
+		nullptr,
+		0.1,
+		nullptr,
+		nullptr,
+		nullptr);
+	rg_->forces += vertexOmegas_.transpose() * vertexInPlaneForces;
+
+
 }
 
 void HybridSolver::gridCollisionHandling_()
@@ -395,26 +432,75 @@ void HybridSolver::updateAffineMomenta_()
 void HybridSolver::solve(double Dt, double maxt, double alpha)
 {
 	clog << "evaluate the initial weights...";
-	evaluateInterpolationWeights_();
-	clog << "done!\n";
-	clog << "first particle to grid...";
-	particleToGrid_();
+	evaluateInterpolationWeights_(omegas_,
+		domegas_1_,
+		domegas_2_,
+		domegas_3_,
+		ps_->positions);
+	evaluateInterpolationWeights_(vertexOmegas_,
+		dvertexOmegas_1_,
+		dvertexOmegas_2_,
+		dvertexOmegas_3_,
+		mesh_->vertexPositions);
+	evaluateInterpolationWeights_(elementOmegas_,
+		delementOmegas_1_,
+		delementOmegas_2_,
+		delementOmegas_3_,
+		mesh_->elementPositions);
 	clog << "done!\n";
 
+	clog << "first particle to grid...";
+	rg_->masses.setZero();
+	rg_->velocities.setZero();
+	particleToGrid_(rg_->masses,
+		rg_->velocities,
+		ps_->masses,
+		ps_->velocities,
+		ps_->positions,
+		ps_->affineMomenta_1,
+		ps_->affineMomenta_2,
+		ps_->affineMomenta_3,
+		omegas_);
+
+	// DANGEROUS!
 	clog << "evaluate particle densities and volumes...";
 	ps_->densities = omegas_ * rg_->masses / rg_->gridVolume();
 	ps_->volumes = ps_->masses.cwiseProduct(ps_->densities.cwiseInverse());
 	clog << "done!\n";
 
+	particleToGrid_(rg_->masses,
+		rg_->velocities,
+		mesh_->vertexMasses,
+		mesh_->vertexVelocities,
+		mesh_->vertexPositions,
+		mesh_->vertexAffineMomenta_1,
+		mesh_->vertexAffineMomenta_2,
+		mesh_->vertexAffineMomenta_3,
+		vertexOmegas_);
+	particleToGrid_(rg_->masses,
+		rg_->velocities,
+		mesh_->elementMasses,
+		mesh_->elementVelocities,
+		mesh_->elementPositions,
+		mesh_->elementAffineMomenta_1,
+		mesh_->elementAffineMomenta_2,
+		mesh_->elementAffineMomenta_3,
+		elementOmegas_);
+	clog << "done!\n";
+
+
+
 	double t = 0.0;
-	//int step = 0;
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
 		clog << "time: " << t << endl;
+
 		clog << "compute grid forces...";
+		// TODO
 		computeGridForces_(Dt, SAND);
 		clog << "done!\n";
+
 		clog << "update grid velocities...";
 		rg_->velocities += Dt * rg_->masses.asDiagonal() * rg_->forces;
 		clog << "done!\n";
@@ -422,28 +508,77 @@ void HybridSolver::solve(double Dt, double maxt, double alpha)
 		gridCollisionHandling_();
 		clog << "done!\n";
 		clog << "update deformation gradients...";
+		// TODO
 		updateDeformationGradients_(SAND);
 		clog << "done!\n";
 		clog << "update particle velocities...";
+		// TODO
 		updateParticleVelocities_(alpha, Dt);
 		clog << "done!\n";
 
 #if defined(AFFINE_PIC)
 		clog << "update affine momenta...";
+
+		// TODO
 		updateAffineMomenta_();
 		clog << "done!\n";
 #endif
 		clog << "update particle positions...";
+		// TODO
 		ps_->positions += Dt * ps_->velocities;
 		clog << "done!\n";
-		//updateViewer();
 
 		clog << "evaluate iteration weights...";
-		evaluateInterpolationWeights_();
+		evaluateInterpolationWeights_(omegas_,
+			domegas_1_,
+			domegas_2_,
+			domegas_3_,
+			ps_->positions);
+		evaluateInterpolationWeights_(vertexOmegas_,
+			dvertexOmegas_1_,
+			dvertexOmegas_2_,
+			dvertexOmegas_3_,
+			mesh_->vertexPositions);
+		evaluateInterpolationWeights_(elementOmegas_,
+			delementOmegas_1_,
+			delementOmegas_2_,
+			delementOmegas_3_,
+			mesh_->elementPositions);
 		clog << "done!\n";
+
 		clog << "iterate particle to grid...";
-		particleToGrid_();
+		rg_->masses.setZero();
+		rg_->velocities.setZero();
+		particleToGrid_(rg_->masses,
+			rg_->velocities,
+			ps_->masses,
+			ps_->velocities,
+			ps_->positions,
+			ps_->affineMomenta_1,
+			ps_->affineMomenta_2,
+			ps_->affineMomenta_3,
+			omegas_);
+		particleToGrid_(rg_->masses,
+			rg_->velocities,
+			mesh_->vertexMasses,
+			mesh_->vertexVelocities,
+			mesh_->vertexPositions,
+			mesh_->vertexAffineMomenta_1,
+			mesh_->vertexAffineMomenta_2,
+			mesh_->vertexAffineMomenta_3,
+			vertexOmegas_);
+		particleToGrid_(rg_->masses,
+			rg_->velocities,
+			mesh_->elementMasses,
+			mesh_->elementVelocities,
+			mesh_->elementPositions,
+			mesh_->elementAffineMomenta_1,
+			mesh_->elementAffineMomenta_2,
+			mesh_->elementAffineMomenta_3,
+			elementOmegas_);
 		clog << "done!\n";
+
+
 		t += Dt;
 	}
 

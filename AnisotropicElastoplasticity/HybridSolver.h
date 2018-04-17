@@ -38,14 +38,38 @@ private:
 	Eigen::SparseMatrix<double> domegas_2_;
 	Eigen::SparseMatrix<double> domegas_3_;
 
+	Eigen::SparseMatrix<double> vertexOmegas_;
+	Eigen::SparseMatrix<double> dvertexOmegas_1_;
+	Eigen::SparseMatrix<double> dvertexOmegas_2_;
+	Eigen::SparseMatrix<double> dvertexOmegas_3_;
+
+	Eigen::SparseMatrix<double> elementOmegas_;
+	Eigen::SparseMatrix<double> delementOmegas_1_;
+	Eigen::SparseMatrix<double> delementOmegas_2_;
+	Eigen::SparseMatrix<double> delementOmegas_3_;
+
+
 	std::vector<Eigen::Matrix3d> candidateElasticDeformationGradients_;
 	
 	LevelSet phi_;
 	DLevelSet dphi_;
 
 
-	void evaluateInterpolationWeights_();
-	void particleToGrid_();
+	void evaluateInterpolationWeights_(Eigen::SparseMatrix<double>& omegas,
+		Eigen::SparseMatrix<double>& domegas_1,
+		Eigen::SparseMatrix<double>& domegas_2,
+		Eigen::SparseMatrix<double>& domegas_3,
+		const Eigen::MatrixX3d& particlePositions);
+	void particleToGrid_(Eigen::VectorXd& gridMasses,
+		Eigen::MatrixX3d& gridVelocities,
+		const Eigen::VectorXd& particleMasses,
+		const Eigen::MatrixX3d& particleVelocities,
+		const Eigen::MatrixX3d& particlePositions,
+		const Eigen::MatrixX3d& particleAffineMomenta_1,
+		const Eigen::MatrixX3d& particleAffineMomenta_2,
+		const Eigen::MatrixX3d& particleAffineMomenta_3,
+		const Eigen::SparseMatrix<double>& omegas);
+
 	void computeGridForces_(double Dt, MaterialType type);
 	void gridCollisionHandling_();
 	void updateDeformationGradients_(MaterialType type);
