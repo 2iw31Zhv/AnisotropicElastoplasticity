@@ -23,7 +23,7 @@ bool pre_draw(viewer::Viewer &viewer)
 }
 void simulate()
 {
-	solver.solve(1e-4, 100.0, 0.95);
+	solver.solve(1e-5, 100.0, 0.95);
 }
 
 bool key_down(igl::viewer::Viewer& viewer, unsigned char key, int modifier)
@@ -51,7 +51,7 @@ int main()
 		Vector3d(5.0, 5.0, 8.0),
 		Vector3i(100, 100, 100));
 
-	LagrangianMesh mesh = LagrangianMesh::ObjMesh("square_random.obj", 2e3, 1e-3, 400, 0.3, 0.0, 4e4);
+	LagrangianMesh mesh = LagrangianMesh::ObjMesh("square_random.obj", 2e3, 1e-3, 400, 0.3, 0.0, 4e4, 0.0);
 
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);

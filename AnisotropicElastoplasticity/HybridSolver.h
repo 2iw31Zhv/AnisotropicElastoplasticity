@@ -72,10 +72,15 @@ private:
 
 	void computeGridForces_(double Dt, MaterialType type);
 	void gridCollisionHandling_();
-	void updateDeformationGradients_(MaterialType type);
+	void updateDeformationGradients_(double Dt, MaterialType type);
 	void updateParticleVelocities_(double alpha, double Dt);
 
-	void updateAffineMomenta_();
+	void updateAffineMomenta_(Eigen::MatrixX3d& affineMomenta_1,
+		Eigen::MatrixX3d& affineMomenta_2,
+		Eigen::MatrixX3d& affineMomenta_3,
+		const Eigen::SparseMatrix<double>& omegas,
+		const Eigen::MatrixX3d& particlePositions,
+		const Eigen::MatrixX3d& particleVelocities);
 public:
 
 	std::mutex mtx_;

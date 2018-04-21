@@ -95,7 +95,8 @@ LagrangianMesh::LagrangianMesh(
 	double mu,
 	double lambda,
 	double shearStiffness,
-	double stiffness) :
+	double stiffness,
+	double frictionCoeff) :
 	vertexPositions(vertexPositions),
 	faces(faces),
 	vertexVelocities(vertexVelocities),
@@ -112,7 +113,8 @@ LagrangianMesh::LagrangianMesh(
 	mu(mu),
 	lambda(lambda),
 	shearStiffness(shearStiffness),
-	stiffness(stiffness)
+	stiffness(stiffness),
+	frictionCoeff(frictionCoeff)
 {
 	int Nv = vertexPositions.rows();
 	int Nf = faces.rows();
@@ -129,13 +131,7 @@ LagrangianMesh::LagrangianMesh(
 	elementAffineMomenta_3.resize(Nf, 3);
 
 	// set the element positions from the vertices
-	for (int f = 0; f < Nf; ++f)
-	{
-		const Vector3d& v1 = vertexPositions.row(faces.row(f)[0]);
-		const Vector3d& v2 = vertexPositions.row(faces.row(f)[1]);
-		const Vector3d& v3 = vertexPositions.row(faces.row(f)[2]);
-		elementPositions.row(f) = (v1 + v2 + v3) / 3.0;
-	}
+	updateElementPositions();
 
 	colors_.resize(faces.rows(), 3);
 	colors_.setOnes();
@@ -151,7 +147,8 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 	double youngsModulus,
 	double poissonRatio,
 	double shearStiffness,
-	double stiffness)
+	double stiffness,
+	double frictionAngleInDegree)
 {
 	ifstream fin(filename);
 
@@ -303,7 +300,8 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 		mu,
 		lambda,
 		shearStiffness,
-		stiffness);
+		stiffness,
+		tan(frictionAngleInDegree * igl::PI / 180.0));
 }
 
 void LagrangianMesh::updateViewer()
@@ -312,8 +310,24 @@ void LagrangianMesh::updateViewer()
 	viewer_->data.set_colors(colors_);
 }
 
+void LagrangianMesh::updateElementPositions()
+{
+	for (int f = 0; f < faces.rows(); ++f)
+	{
+		const Vector3d& v1 = vertexPositions.row(faces.row(f)[0]);
+		const Vector3d& v2 = vertexPositions.row(faces.row(f)[1]);
+		const Vector3d& v3 = vertexPositions.row(faces.row(f)[2]);
+		elementPositions.row(f) = (v1 + v2 + v3) / 3.0;
+	}
+}
+
+void LagrangianMesh::filterOutConstrainedVertices()
+{
+	vertexVelocities.topRows<4>().setZero();
+}
+
 void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
-	std::vector<Matrix2d>& inPlanePiolaKirhoffStresses)
+	std::vector<Eigen::Matrix2d>& inPlanePiolaKirhoffStresses)
 {
 	int Nv = vertexPositions.rows();
 	vertexForces.resize(Nv, 3);
@@ -331,11 +345,13 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 
 		Matrix3d directionMatrix = elasticDeformationGradient[f] * restDirectionMatrix;
 
-		HouseholderQR<Matrix3d> qr(directionMatrix);
-		Matrix3d Q = qr.householderQ();
-		Matrix3d R = Q.transpose() * directionMatrix;
+		Matrix3d Q, R;
+		Vector3d q1, q2, q3;
 
-		// need to make sure whether it is correct
+		GramSchmidtOrthonomalization(Q, R, directionMatrix);
+		q1 = Q.col(0);
+		q2 = Q.col(1);
+		q3 = Q.col(2);
 
 		Matrix2d inPlaneR = R.block<2, 2>(0, 0);
 		JacobiSVD<Matrix2d> svd(inPlaneR, ComputeFullU | ComputeFullV);
@@ -351,10 +367,6 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		double dr11 = piolaKirhoffStress(0, 0);
 		double dr12 = piolaKirhoffStress(0, 1);
 		double dr22 = piolaKirhoffStress(1, 1);
-
-		const Vector3d& q1 = Q.col(0);
-		const Vector3d& q2 = Q.col(1);
-		const Vector3d& q3 = Q.col(2);
 
 
 		Vector3d f1 = (dr11 + dr12) * q1 + dr22 * q2;

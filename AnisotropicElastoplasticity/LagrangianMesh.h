@@ -59,6 +59,8 @@ public:
 	double shearStiffness;
 	double stiffness;
 
+	double frictionCoeff;
+
 	LagrangianMesh(const Eigen::MatrixX3d& vertexPositions,
 		const Eigen::MatrixX3i& faces,
 		const Eigen::MatrixX3d& vertexVelocities,
@@ -75,7 +77,8 @@ public:
 		double mu,
 		double lambda,
 		double shearStiffness,
-		double stiffness);
+		double stiffness,
+		double frictionCoeff);
 
 	static LagrangianMesh ObjMesh(const std::string& filename,
 		double density,
@@ -83,15 +86,18 @@ public:
 		double youngsModulus,
 		double poissonRatio,
 		double shearStiffness,
-		double stiffness);
+		double stiffness,
+		double frictionAngleInDegree);
 
 	void bindViewer(igl::viewer::Viewer * viewer) { viewer_ = viewer; }
 	void updateViewer();
+	void updateElementPositions();
+	void filterOutConstrainedVertices();
 
-	const Eigen::MatrixX3d elementRestDirections_1() const { return elementRestDirections_1_; }
-	const Eigen::MatrixX3d elementRestDirections_2() const { return elementRestDirections_2_; }
-	const Eigen::MatrixX3d elementRestDirections_3() const { return elementRestDirections_3_; }
+	const Eigen::MatrixX3d& elementRestDirections_1() const { return elementRestDirections_1_; }
+	const Eigen::MatrixX3d& elementRestDirections_2() const { return elementRestDirections_2_; }
+	const Eigen::MatrixX3d& elementRestDirections_3() const { return elementRestDirections_3_; }
 
 	void computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
-		std::vector<Matrix2d>& inPlanePiolaKirhoffStresses);
+		std::vector < Eigen::Matrix2d > & inPlanePiolaKirhoffStresses);
 };
