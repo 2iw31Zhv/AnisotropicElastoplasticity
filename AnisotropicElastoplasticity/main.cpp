@@ -51,7 +51,7 @@ int main()
 		Vector3d(5.0, 5.0, 8.0),
 		Vector3i(100, 100, 100));
 
-	LagrangianMesh mesh = LagrangianMesh::ObjMesh("square_random.obj", 2e3, 1e-3);
+	LagrangianMesh mesh = LagrangianMesh::ObjMesh("square_random.obj", 2e3, 1e-3, 400, 0.3, 0.0, 4e4);
 
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);

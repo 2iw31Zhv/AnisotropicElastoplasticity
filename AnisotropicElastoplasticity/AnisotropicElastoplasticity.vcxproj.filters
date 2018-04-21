@@ -39,18 +39,6 @@
     <ClCompile Include="geometry.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TriangleCondition.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ClothElastic.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="LinearAlgebra.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MathExtensions.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ParticleSystem.h">
@@ -72,18 +60,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="geometry.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TriangleCondition.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ClothElastic.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="LinearAlgebra.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MathExtensions.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

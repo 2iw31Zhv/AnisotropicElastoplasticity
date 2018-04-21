@@ -91,7 +91,11 @@ LagrangianMesh::LagrangianMesh(
 	const Eigen::VectorXd& elementVolumes,
 	const Eigen::MatrixX3d& elementRestDirections_1,
 	const Eigen::MatrixX3d& elementRestDirections_2,
-	const Eigen::MatrixX3d& elementRestDirections_3) :
+	const Eigen::MatrixX3d& elementRestDirections_3,
+	double mu,
+	double lambda,
+	double shearStiffness,
+	double stiffness) :
 	vertexPositions(vertexPositions),
 	faces(faces),
 	vertexVelocities(vertexVelocities),
@@ -102,9 +106,13 @@ LagrangianMesh::LagrangianMesh(
 	vertexVolumes(vertexVolumes),
 	elementMasses(elementMasses),
 	elementVolumes(elementVolumes),
-	elementRestDirections_1(elementRestDirections_1),
-	elementRestDirections_2(elementRestDirections_2),
-	elementRestDirections_3(elementRestDirections_3)
+	elementRestDirections_1_(elementRestDirections_1),
+	elementRestDirections_2_(elementRestDirections_2),
+	elementRestDirections_3_(elementRestDirections_3),
+	mu(mu),
+	lambda(lambda),
+	shearStiffness(shearStiffness),
+	stiffness(stiffness)
 {
 	int Nv = vertexPositions.rows();
 	int Nf = faces.rows();
@@ -139,7 +147,11 @@ LagrangianMesh::LagrangianMesh(
 
 LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 	double density,
-	double thickness)
+	double thickness,
+	double youngsModulus,
+	double poissonRatio,
+	double shearStiffness,
+	double stiffness)
 {
 	ifstream fin(filename);
 
@@ -263,17 +275,18 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 		vertexVolumes[F.row(f)[2]] += volume;
 
 		Vector3d normal = triangleNormal(v1, v2, v3);
-		Vector3d t1 = (v2 - v1).normalized();
-		Vector3d t2 = normal.cross(t1);
 
-		elementRestDirections_1.row(f) = t1;
-		elementRestDirections_2.row(f) = t2;
+		elementRestDirections_1.row(f) = v2 - v1;
+		elementRestDirections_2.row(f) = v3 - v1;
 		elementRestDirections_3.row(f) = normal;
 
 	}
 
 	VectorXd vertexMasses = density * vertexVolumes;
 	VectorXd elementMasses = density * elementVolumes;
+
+	double lambda = youngsModulus * poissonRatio / (1.0 + poissonRatio) / (1.0 - 2.0 * poissonRatio);
+	double mu = youngsModulus / 2.0 / (1.0 + poissonRatio);
 
 	return LagrangianMesh(V, F, 
 		vertexVelocities,
@@ -286,11 +299,70 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 		elementVolumes,
 		elementRestDirections_1,
 		elementRestDirections_2,
-		elementRestDirections_3);
+		elementRestDirections_3,
+		mu,
+		lambda,
+		shearStiffness,
+		stiffness);
 }
 
 void LagrangianMesh::updateViewer()
 {
 	viewer_->data.set_mesh(vertexPositions, faces);
 	viewer_->data.set_colors(colors_);
+}
+
+void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
+	std::vector<Matrix2d>& inPlanePiolaKirhoffStresses)
+{
+	int Nv = vertexPositions.rows();
+	vertexForces.resize(Nv, 3);
+	vertexForces.setZero();
+
+	int Ne = elementPositions.rows();
+	inPlanePiolaKirhoffStresses.resize(Ne);
+
+	for (int f = 0; f < Ne; ++f)
+	{
+		Matrix3d restDirectionMatrix;
+		restDirectionMatrix.col(0) = elementRestDirections_1().row(f);
+		restDirectionMatrix.col(1) = elementRestDirections_2().row(f);
+		restDirectionMatrix.col(2) = elementRestDirections_3().row(f);
+
+		Matrix3d directionMatrix = elasticDeformationGradient[f] * restDirectionMatrix;
+
+		HouseholderQR<Matrix3d> qr(directionMatrix);
+		Matrix3d Q = qr.householderQ();
+		Matrix3d R = Q.transpose() * directionMatrix;
+
+		// need to make sure whether it is correct
+
+		Matrix2d inPlaneR = R.block<2, 2>(0, 0);
+		JacobiSVD<Matrix2d> svd(inPlaneR, ComputeFullU | ComputeFullV);
+
+		Matrix2d rotation = svd.matrixU() * svd.matrixV().transpose();
+		double J = inPlaneR.diagonal().prod();
+
+		Matrix2d piolaKirhoffStress = 2.0 * mu * (inPlaneR - rotation)
+			+ lambda * (J - 1) * J * inPlaneR.inverse().transpose();
+
+		inPlanePiolaKirhoffStresses[f] = piolaKirhoffStress;
+
+		double dr11 = piolaKirhoffStress(0, 0);
+		double dr12 = piolaKirhoffStress(0, 1);
+		double dr22 = piolaKirhoffStress(1, 1);
+
+		const Vector3d& q1 = Q.col(0);
+		const Vector3d& q2 = Q.col(1);
+		const Vector3d& q3 = Q.col(2);
+
+
+		Vector3d f1 = (dr11 + dr12) * q1 + dr22 * q2;
+		Vector3d f2 = -dr11 * q1;
+		Vector3d f3 = -dr12 * q1 - dr22 * q2;
+
+		vertexForces.row(faces.row(f)[0]) += f1;
+		vertexForces.row(faces.row(f)[1]) += f2;
+		vertexForces.row(faces.row(f)[2]) += f3;
+	}
 }
