@@ -9,6 +9,7 @@
 #include "LevelSet.h"
 #include <thread>
 
+
 using namespace std;
 using namespace Eigen;
 using namespace igl;
@@ -23,7 +24,7 @@ bool pre_draw(viewer::Viewer &viewer)
 }
 void simulate()
 {
-	solver.solve(1e-5, 100.0, 0.95);
+	solver.solve(0.3, 100.0, 0.95);
 }
 
 bool key_down(igl::viewer::Viewer& viewer, unsigned char key, int modifier)
@@ -45,13 +46,18 @@ int main()
 	Vector3d(0.0, 0.0, 0.1),
 		0.5,
 		2.0,
-		1e5);
+		1e4);
 
-	RegularGrid rg(Vector3d(-5.0, -5.0, -2.0),
-		Vector3d(5.0, 5.0, 8.0),
-		Vector3i(100, 100, 100));
+	int meshRes = 12.0;
+	double gridLen = 1.0 / meshRes;
+	double totalLen = 50.0 * gridLen;
 
-	LagrangianMesh mesh = LagrangianMesh::ObjMesh("square_random.obj", 2e3, 1e-3, 400, 0.3, 0.0, 4e4, 0.0);
+	RegularGrid rg(Vector3d(-0.5 * totalLen, -0.5 * totalLen, -0.25 * totalLen),
+		Vector3d(0.5 * totalLen, 0.5 * totalLen, 0.75 * totalLen),
+		Vector3i(50, 50, 50));
+
+	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
+		"square_double_12.obj", 2e3, 1e-3, 400, 0.3, 0.0, 4e4, 0.0);
 
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
@@ -67,10 +73,10 @@ int main()
 	solver.bindViewer(&viewer);
 
 	
-	viewer.core.point_size = 1.0;
+	viewer.core.point_size = 2.0;
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
-	viewer.core.show_lines = false;
+	viewer.core.show_lines = true;
 	viewer.callback_key_down = &key_down;
 	viewer.callback_pre_draw = &pre_draw;
 	

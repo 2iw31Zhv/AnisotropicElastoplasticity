@@ -276,7 +276,6 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 		elementRestDirections_1.row(f) = v2 - v1;
 		elementRestDirections_2.row(f) = v3 - v1;
 		elementRestDirections_3.row(f) = normal;
-
 	}
 
 	VectorXd vertexMasses = density * vertexVolumes;
@@ -323,7 +322,7 @@ void LagrangianMesh::updateElementPositions()
 
 void LagrangianMesh::filterOutConstrainedVertices()
 {
-	vertexVelocities.topRows<4>().setZero();
+
 }
 
 void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
@@ -336,12 +335,22 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 	int Ne = elementPositions.rows();
 	inPlanePiolaKirhoffStresses.resize(Ne);
 
+
+	ofstream fout("refR.txt", ios::app);
+	fout << endl << "begin" << endl;
+
 	for (int f = 0; f < Ne; ++f)
 	{
 		Matrix3d restDirectionMatrix;
-		restDirectionMatrix.col(0) = elementRestDirections_1().row(f);
-		restDirectionMatrix.col(1) = elementRestDirections_2().row(f);
-		restDirectionMatrix.col(2) = elementRestDirections_3().row(f);
+		Vector3d D1, D2, D3;
+
+		D1 = elementRestDirections_1().row(f);
+		D2 = elementRestDirections_2().row(f);
+		D3 = elementRestDirections_3().row(f);
+
+		restDirectionMatrix.col(0) = D1;
+		restDirectionMatrix.col(1) = D2;
+		restDirectionMatrix.col(2) = D3;
 
 		Matrix3d directionMatrix = elasticDeformationGradient[f] * restDirectionMatrix;
 
@@ -349,29 +358,59 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		Vector3d q1, q2, q3;
 
 		GramSchmidtOrthonomalization(Q, R, directionMatrix);
+
 		q1 = Q.col(0);
 		q2 = Q.col(1);
 		q3 = Q.col(2);
 
 		Matrix2d inPlaneR = R.block<2, 2>(0, 0);
-		JacobiSVD<Matrix2d> svd(inPlaneR, ComputeFullU | ComputeFullV);
+		
+		Matrix3d restQ, restR;
+		GramSchmidtOrthonomalization(restQ, restR, restDirectionMatrix);
+
+		Matrix2d restInPlaneR = restR.block<2, 2>(0, 0);
+		Matrix2d invRest = inverseR(restInPlaneR);
+
+		double i11 = invRest(0, 0),
+			i12 = invRest(0, 1),
+			i22 = invRest(1, 1);
+
+		Matrix2d refInPlaneR = inPlaneR * invRest;
+
+		Matrix2d invRefMulDet;
+		invRefMulDet << R(1, 1), -R(0, 1),
+			0.0, R(0, 0);
+
+		fout << "inplaneR" << endl << inPlaneR << endl;
+		fout << "restplaneR" << endl << restInPlaneR << endl;
+		fout << "refplaneR" << endl << refInPlaneR << endl;
+
+		JacobiSVD<Matrix2d> svd(refInPlaneR, ComputeFullU | ComputeFullV);
 
 		Matrix2d rotation = svd.matrixU() * svd.matrixV().transpose();
-		double J = inPlaneR.diagonal().prod();
+		double J = refInPlaneR.diagonal().prod();
 
-		Matrix2d piolaKirhoffStress = 2.0 * mu * (inPlaneR - rotation)
-			+ lambda * (J - 1) * J * inPlaneR.inverse().transpose();
+		Vector2d Sigma = svd.singularValues() - Vector2d::Ones();
+
+		Matrix2d piolaKirhoffStress = 2.0 * mu * (refInPlaneR - rotation)
+			+ lambda * (J - 1) * invRefMulDet.transpose();
 
 		inPlanePiolaKirhoffStresses[f] = piolaKirhoffStress;
 
-		double dr11 = piolaKirhoffStress(0, 0);
-		double dr12 = piolaKirhoffStress(0, 1);
-		double dr22 = piolaKirhoffStress(1, 1);
+		double dr11 = piolaKirhoffStress(0, 0),
+			dr12 = piolaKirhoffStress(0, 1),
+			dr21 = piolaKirhoffStress(1, 0),
+			dr22 = piolaKirhoffStress(1, 1);
 
+		//Vector3d f1 = (dr11 * i11  + dr12 * (i12 + i22))* q1
+		//	 + dr22 * i22 * q2;
+		Vector3d f2 = -(dr11 * i11 + dr12 * i12) * q1;
+		Vector3d f3 = -dr12 * i22 * q1 - dr22 * i22 * q2;
+		Vector3d f1 = -(f2 + f3);
 
-		Vector3d f1 = (dr11 + dr12) * q1 + dr22 * q2;
-		Vector3d f2 = -dr11 * q1;
-		Vector3d f3 = -dr12 * q1 - dr22 * q2;
+		fout << f1.transpose() << endl;
+		fout << f2.transpose() << endl;
+		fout << f3.transpose() << endl;
 
 		vertexForces.row(faces.row(f)[0]) += f1;
 		vertexForces.row(faces.row(f)[1]) += f2;

@@ -184,3 +184,19 @@ void RegularGrid::updateViewer()
 	mtx_.unlock();
 	viewer_->data.add_edges(points_1_, points_2_, colors_);
 }
+
+const double RegularGrid::max_velocity() const
+{
+	double maxv = 0.0;
+	for (int i = 0; i < velocities.rows(); ++i)
+	{
+		double norm = velocities.row(i).norm();
+		if (norm > maxv)
+		{
+			maxv = norm;
+		}
+	}
+	return maxv;
+}
+
+

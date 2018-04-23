@@ -56,4 +56,6 @@ public:
 	const Eigen::Vector3d& h() const { return h_; }
 	const Eigen::Vector3i& resolution() const { return resolution_; }
 	const Eigen::MatrixX3d& positions() const { return positions_; }
+	const double max_velocity() const;
+	const double CFL_condition() const { return max_velocity() / h_.minCoeff(); }
 };

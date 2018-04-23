@@ -91,7 +91,7 @@ public:
 	void setRegularGrid(RegularGrid * rg) { rg_ = rg; }
 	void setLagrangianMesh(LagrangianMesh * mesh) { mesh_ = mesh; }
 	void setLevelSet(const LevelSet& phi, const DLevelSet& dphi) { phi_ = phi; dphi_ = dphi; }
-	void solve(double Dt, double maxt, double alpha);
+	void solve(double CFL, double maxt, double alpha);
 
 	void bindViewer(igl::viewer::Viewer * viewer);
 	void updateViewer();

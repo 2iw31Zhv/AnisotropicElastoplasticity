@@ -60,3 +60,44 @@ void GramSchmidtOrthonomalization(Eigen::Matrix3d & Q,
 		0.0, r22, r23,
 		0.0, 0.0, r33;
 }
+
+#define POW2(x) ((x) * (x))
+#define POW4(x) ((x) * (x) * (x) * (x))
+
+Eigen::Matrix2d inverseR(const Eigen::Matrix2d R)
+{
+	Matrix2d invR;
+	invR << 1.0 / R(0, 0), -R(0, 1) / R(0, 0) / R(1, 1),
+		0.0, 1.0 / R(1, 1);
+	return invR;
+}
+
+void PolarDecompositionR(
+	Eigen::Matrix2d& rotation,
+	Eigen::Matrix2d& symmetry,
+	const Eigen::Matrix2d& R)
+{
+	double r11 = R(0, 0),
+		r12 = R(0, 1), r22 = R(1, 1);
+	
+	double sumSqr = POW2(r11) + POW2(r12) + POW2(r22);
+	double delta = POW2(sumSqr) - 4.0 * POW2(r11) * POW2(r22);
+
+	Vector2d Sigma;
+	Sigma[0] = sqrt(0.5 * (sumSqr - sqrt(delta)));
+	Sigma[1] = sqrt(0.5 * (sumSqr + sqrt(delta)));
+
+	double pmSqr = POW2(r11) + POW2(r12) - POW2(r22);
+	double PmD = pmSqr - sqrt(delta);
+	double PpD = pmSqr + sqrt(delta);
+
+	double mD = sqrt(4 * POW2(12) * POW2(22) + POW2(PmD));
+	double pD = sqrt(4 * POW2(12) * POW2(22) + POW2(PpD));
+
+	Matrix2d U;
+	U << PmD / mD, PpD / pD,
+		2.0 * r11 * r12 / mD, 2.0 * r11 * r12 / pD;
+
+	rotation = U * Sigma.cwiseInverse().asDiagonal() * U.transpose() * R;
+	symmetry = rotation.transpose() * R;
+}

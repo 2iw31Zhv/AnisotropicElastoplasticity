@@ -17,3 +17,10 @@ void GramSchmidtOrthonomalization(
 	Eigen::Matrix3d& Q,
 	Eigen::Matrix3d& R,
 	const Eigen::Matrix3d& matrix);
+
+Eigen::Matrix2d inverseR(const Eigen::Matrix2d R);
+
+void PolarDecompositionR(
+	Eigen::Matrix2d& rotation,
+	Eigen::Matrix2d& symmetry,
+	const Eigen::Matrix2d& R);
