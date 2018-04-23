@@ -80,7 +80,8 @@ private:
 		Eigen::MatrixX3d& affineMomenta_3,
 		const Eigen::SparseMatrix<double>& omegas,
 		const Eigen::MatrixX3d& particlePositions,
-		const Eigen::MatrixX3d& particleVelocities);
+		const Eigen::MatrixX3d& particleVelocities,
+		double dampRatio);
 public:
 
 	std::mutex mtx_;

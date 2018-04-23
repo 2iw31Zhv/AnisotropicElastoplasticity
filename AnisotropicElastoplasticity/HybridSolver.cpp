@@ -588,7 +588,8 @@ Eigen::MatrixX3d& affineMomenta_2,
 Eigen::MatrixX3d& affineMomenta_3,
 const Eigen::SparseMatrix<double>& omegas,
 const Eigen::MatrixX3d& particlePositions,
-const Eigen::MatrixX3d& particleVelocities)
+const Eigen::MatrixX3d& particleVelocities,
+double dampRatio)
 {
 	affineMomenta_1 = omegas * rg_->velocities.col(0).asDiagonal()
 		* rg_->positions()
@@ -599,6 +600,24 @@ const Eigen::MatrixX3d& particleVelocities)
 	affineMomenta_3 = omegas * rg_->velocities.col(2).asDiagonal()
 		* rg_->positions()
 		- particleVelocities.col(2).asDiagonal() * particlePositions;
+
+	for (int i = 0; i < affineMomenta_1.rows(); ++i)
+	{
+		Matrix3d C;
+		C.row(0) = affineMomenta_1.row(i);
+		C.row(1) = affineMomenta_2.row(i);
+		C.row(2) = affineMomenta_3.row(i);
+
+		Matrix3d skew, symm;
+		symm << C(0, 0), 0.5 * (C(0, 1) + C(1, 0)), 0.5 * (C(0, 2) + C(2, 0)),
+			0.5 * (C(0, 1) + C(1, 0)), C(1, 1), 0.5 * (C(1, 2) + C(2, 1)),
+			0.5 * (C(0, 2) + C(2, 0)), 0.5 * (C(1, 2) + C(2, 1)), C(2, 2);
+		skew = C - symm;
+		C = skew + (1 - dampRatio) * symm;
+		affineMomenta_1.row(i) = C.row(0);
+		affineMomenta_2.row(i) = C.row(1);
+		affineMomenta_3.row(i) = C.row(2);
+	}
 }
 
 void HybridSolver::solve(double CFL, double maxt, double alpha)
@@ -706,19 +725,22 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 			ps_->affineMomenta_3,
 			omegas_,
 			ps_->positions,
-			ps_->velocities);
+			ps_->velocities,
+			0.0);
 		updateAffineMomenta_(mesh_->vertexAffineMomenta_1,
 			mesh_->vertexAffineMomenta_2,
 			mesh_->vertexAffineMomenta_3,
 			vertexOmegas_,
 			mesh_->vertexPositions,
-			mesh_->vertexVelocities);
+			mesh_->vertexVelocities,
+			0.99);
 		updateAffineMomenta_(mesh_->elementAffineMomenta_1,
 			mesh_->elementAffineMomenta_2,
 			mesh_->elementAffineMomenta_3,
 			elementOmegas_,
 			mesh_->elementPositions,
-			mesh_->elementVelocities);
+			mesh_->elementVelocities,
+			0.99);
 		clog << "done!\n";
 
 
