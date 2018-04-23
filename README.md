@@ -7,4 +7,4 @@ Jiang, C., Gast, T., .and Teran, J. Anisotropic elastoplasticity for cloth, knit
 
 Gast, T., Pradhana, A., Fu, C., Schroeder, C., Jiang, C., and Teran, J. Drucker-prager elastoplasticity for sand animation. Acm Transactions on Graphics 35, 4 (2016), 103.
 
-Stomakhin, A., Chai, L., Chai, L., Selle, A., and Selle, A. A material point method for snow simulation. Acm Transactions on Graphics 32, 4 (2013), 102.
+Stomakhin, A., Chai, L., and Selle, A. A material point method for snow simulation. Acm Transactions on Graphics 32, 4 (2013), 102.
