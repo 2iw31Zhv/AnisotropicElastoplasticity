@@ -25,6 +25,12 @@ private:
 	void computeRestMetrics_();
 	void computeAreas_();
 
+	void forceRelaxer(
+		Eigen::Matrix2d& rotation,
+		Eigen::Matrix2d& symmetry,
+		double& J,
+		double tolerance);
+
 public:
 	Eigen::MatrixX3d vertexPositions;
 	Eigen::MatrixX3d elementPositions;
@@ -92,7 +98,6 @@ public:
 	void bindViewer(igl::viewer::Viewer * viewer) { viewer_ = viewer; }
 	void updateViewer();
 	void updateElementPositions();
-	void filterOutConstrainedVertices();
 
 	const Eigen::MatrixX3d& elementRestDirections_1() const { return elementRestDirections_1_; }
 	const Eigen::MatrixX3d& elementRestDirections_2() const { return elementRestDirections_2_; }

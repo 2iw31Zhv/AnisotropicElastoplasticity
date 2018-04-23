@@ -78,6 +78,52 @@ void LagrangianMesh::computeAreas_()
 	}
 }
 
+void LagrangianMesh::forceRelaxer(
+	Eigen::Matrix2d & rotation, 
+	Eigen::Matrix2d & symmetry, 
+	double & J,
+	double tolerance)
+{
+	if (fabs(symmetry(0, 0)) < tolerance)
+	{
+		symmetry(0, 0) = 0.0;
+	}
+	if (fabs(symmetry(1, 1)) < tolerance)
+	{
+		symmetry(1, 1) = 0.0;
+	}
+	if (fabs(symmetry(0, 1)) < tolerance)
+	{
+		symmetry(0, 1) = 0.0;
+	}
+	if (fabs(symmetry(1, 0)) < tolerance)
+	{
+		symmetry(1, 0) = 0.0;
+	}
+
+	if (fabs(rotation(0, 1)) < tolerance)
+	{
+		rotation(0, 1) = 0.0;
+	}
+	if (fabs(rotation(1, 0)) < tolerance)
+	{
+		rotation(1, 0) = 0.0;
+	}
+	if (fabs(rotation(1, 1) - 1.0) < tolerance)
+	{
+		rotation(1, 1) = 1.0;
+	}
+	if (fabs(rotation(0, 0) - 1.0) < tolerance)
+	{
+		rotation(0, 0) = 1.0;
+	}
+
+	if (fabs(J) < tolerance)
+	{
+		J = 0.0;
+	}
+}
+
 LagrangianMesh::LagrangianMesh(
 	const Eigen::MatrixX3d & vertexPositions,
 	const Eigen::MatrixX3i & faces,
@@ -320,11 +366,6 @@ void LagrangianMesh::updateElementPositions()
 	}
 }
 
-void LagrangianMesh::filterOutConstrainedVertices()
-{
-
-}
-
 void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 	std::vector<Eigen::Matrix2d>& inPlanePiolaKirhoffStresses)
 {
@@ -334,10 +375,6 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 
 	int Ne = elementPositions.rows();
 	inPlanePiolaKirhoffStresses.resize(Ne);
-
-
-	ofstream fout("refR.txt", ios::app);
-	fout << endl << "begin" << endl;
 
 	for (int f = 0; f < Ne; ++f)
 	{
@@ -381,36 +418,25 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		invRefMulDet << R(1, 1), -R(0, 1),
 			0.0, R(0, 0);
 
-		fout << "inplaneR" << endl << inPlaneR << endl;
-		fout << "restplaneR" << endl << restInPlaneR << endl;
-		fout << "refplaneR" << endl << refInPlaneR << endl;
-
 		JacobiSVD<Matrix2d> svd(refInPlaneR, ComputeFullU | ComputeFullV);
-
 		Matrix2d rotation = svd.matrixU() * svd.matrixV().transpose();
-		double J = refInPlaneR.diagonal().prod();
+		Matrix2d symmetry = svd.matrixV() * svd.singularValues().asDiagonal()
+			* svd.matrixV().transpose() - Matrix2d::Identity();
+		double J = refInPlaneR.diagonal().prod() - 1.0;
+		forceRelaxer(rotation, symmetry, J, 1e-15);
 
-		Vector2d Sigma = svd.singularValues() - Vector2d::Ones();
-
-		Matrix2d piolaKirhoffStress = 2.0 * mu * (refInPlaneR - rotation)
-			+ lambda * (J - 1) * invRefMulDet.transpose();
+		Matrix2d piolaKirhoffStress = 2.0 * mu * rotation * symmetry
+			+ lambda * J * invRefMulDet.transpose();
 
 		inPlanePiolaKirhoffStresses[f] = piolaKirhoffStress;
 
 		double dr11 = piolaKirhoffStress(0, 0),
 			dr12 = piolaKirhoffStress(0, 1),
-			dr21 = piolaKirhoffStress(1, 0),
 			dr22 = piolaKirhoffStress(1, 1);
 
-		//Vector3d f1 = (dr11 * i11  + dr12 * (i12 + i22))* q1
-		//	 + dr22 * i22 * q2;
 		Vector3d f2 = -(dr11 * i11 + dr12 * i12) * q1;
 		Vector3d f3 = -dr12 * i22 * q1 - dr22 * i22 * q2;
 		Vector3d f1 = -(f2 + f3);
-
-		fout << f1.transpose() << endl;
-		fout << f2.transpose() << endl;
-		fout << f3.transpose() << endl;
 
 		vertexForces.row(faces.row(f)[0]) += f1;
 		vertexForces.row(faces.row(f)[1]) += f2;

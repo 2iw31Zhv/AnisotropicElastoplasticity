@@ -20,6 +20,7 @@ void GramSchmidtOrthonomalization(
 
 Eigen::Matrix2d inverseR(const Eigen::Matrix2d R);
 
+// with BUG
 void PolarDecompositionR(
 	Eigen::Matrix2d& rotation,
 	Eigen::Matrix2d& symmetry,

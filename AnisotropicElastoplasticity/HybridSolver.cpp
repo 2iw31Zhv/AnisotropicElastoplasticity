@@ -388,6 +388,42 @@ void HybridSolver::gridCollisionHandling_()
 		}
 	}
 
+	// handle fixed cloth vertex
+	for (int s = 0; s < vertexOmegas_.outerSize(); ++s)
+		for (SparseMatrix<double>::InnerIterator it(vertexOmegas_, s); it; ++it)
+		{
+			int vertexID = it.row();
+			int gridID = it.col();
+
+			if (vertexID == 0 || vertexID == 24 ||
+				vertexID == 600 || vertexID == 624)
+			{
+				int ri = get<0>(rg_->toCoordinate(gridID));
+				int rj = get<1>(rg_->toCoordinate(gridID));
+				int rk = get<2>(rg_->toCoordinate(gridID));
+
+				for (int i = ri - 1; i <= ri + 1; ++i)
+				{
+					for (int j = rj - 1; j <= rj + 1; ++j)
+					{
+						for (int k = rk - 1; k <= rk + 1; ++k)
+						{
+							if ((i - ri) * (i - ri)
+								+ (j - rj) * (j - rj)
+								+ (k - rk) * (k - rk)
+								<= 1.0)
+							{
+								int index = rg_->toIndex(i, j, k);
+								if (0 <= index && index < rg_->gridNumber())
+								{
+									rg_->velocities.row(index).setZero();
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 }
 
 void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
@@ -538,7 +574,6 @@ void HybridSolver::updateParticleVelocities_(double alpha, double Dt)
 	ps_->velocities = omegas_ * rg_->velocities;
 	mesh_->elementVelocities = elementOmegas_ * rg_->velocities;
 	mesh_->vertexVelocities = vertexOmegas_ * rg_->velocities;
-	mesh_->filterOutConstrainedVertices();
 
 #else
 	ps_->velocities = (1.0 - alpha) * omegas_ * rg_->velocities
@@ -632,9 +667,10 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
-		double Dt = CFL / max(3e2, rg_->CFL_condition());
+		double Dt = 0.3 / max(3e3, rg_->CFL_condition());
 
-		clog << "time: " << t << endl;
+		clog << "time: " << t << ", ";
+		clog << "delta t: " << Dt << endl;
 
 		clog << "compute grid forces...";
 		computeGridForces_(Dt, SAND);
@@ -780,49 +816,5 @@ void HybridSolver::updateViewer()
 	mtx_.lock();
 	ps_->updateViewer();
 	mesh_->updateViewer();
-	vector<Vector3d> positions;
-
-	for (int k = 0; k < vertexOmegas_.outerSize(); ++k)
-		for (SparseMatrix<double>::InnerIterator it(vertexOmegas_, k); it; ++it)
-		{
-			int v = it.row();
-			positions.push_back(mesh_->vertexPositions.row(v));
-		}
-
-	int hitNum = positions.size();
-	MatrixX3d posVec;
-	posVec.resize(hitNum, 3);
-
-	for (int k = 0; k < hitNum; ++k)
-	{
-		posVec.row(k) = positions[k];
-	}
-
-	MatrixX3d colors;
-	colors.resize(hitNum, 3);
-	colors.col(0).setOnes();
-
-	viewer_->data.add_points(posVec, colors);
-
-	//MatrixX3d e0, e1, c;
-	//e0.resize(4, 3);
-	//e1.resize(4, 3);
-	//c.resize(4, 3);
-
-	//c.setZero();
-	//c.col(1).setOnes();
-
-	//e0.row(0) = Vector3d(-10.0, -10.0, 0.0);
-	//e0.row(1) = Vector3d(-10.0, 1.0, 0.0);
-	//e0.row(2) = Vector3d(1.0, 1.0, 0.0);
-	//e0.row(3) = Vector3d(1.0, -10.0, 0.0);
-
-	//e1.row(0) = e0.row(1);
-	//e1.row(1) = e0.row(2);
-	//e1.row(2) = e0.row(3);
-	//e1.row(3) = e0.row(0);
-
-	//viewer_->data.add_edges(e0, e1, c);
 	mtx_.unlock();
-	//viewer_->save_scene();
 }
