@@ -60,20 +60,15 @@ private:
 		Eigen::SparseMatrix<double>& domegas_2,
 		Eigen::SparseMatrix<double>& domegas_3,
 		const Eigen::MatrixX3d& particlePositions);
-	void particleToGrid_(Eigen::VectorXd& gridMasses,
-		Eigen::MatrixX3d& gridVelocities,
-		const Eigen::VectorXd& particleMasses,
-		const Eigen::MatrixX3d& particleVelocities,
-		const Eigen::MatrixX3d& particlePositions,
-		const Eigen::MatrixX3d& particleAffineMomenta_1,
-		const Eigen::MatrixX3d& particleAffineMomenta_2,
-		const Eigen::MatrixX3d& particleAffineMomenta_3,
-		const Eigen::SparseMatrix<double>& omegas);
+	void particleToGrid_(double tolerance, bool evaluateVolumesAndDensities);
 
 	void computeGridForces_(double Dt, MaterialType type);
-	void gridCollisionHandling_();
+	void gridCollisionHandling_(Eigen::MatrixX3d& gridVelocityChanges);
 	void updateDeformationGradients_(double Dt, MaterialType type);
-	void updateParticleVelocities_(double alpha, double Dt);
+	void updateGridVelocities_(double Dt, double tolerance,
+		Eigen::MatrixX3d& gridVelocityChanges);
+	void updateParticleVelocities_(double alpha, double Dt,
+		const Eigen::MatrixX3d& gridVelocityChanges);
 
 	void updateAffineMomenta_(Eigen::MatrixX3d& affineMomenta_1,
 		Eigen::MatrixX3d& affineMomenta_2,

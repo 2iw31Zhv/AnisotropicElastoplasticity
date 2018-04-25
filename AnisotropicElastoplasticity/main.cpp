@@ -43,21 +43,21 @@ int main()
 	viewer::Viewer viewer;
 
 	ParticleSystem ps = ParticleSystem::SandCylinder(
-	Vector3d(0.0, 0.0, 1.5),
+	Vector3d(0.0, 0.0, 0.02),
 		0.5,
 		2.0,
 		1e4);
 
-	int meshRes = 12.0;
+	double meshRes = 28.4;
 	double gridLen = 1.0 / meshRes;
 	double totalLen = 50.0 * gridLen;
 
-	RegularGrid rg(Vector3d(-0.5 * totalLen, -0.5 * totalLen, -0.5 * totalLen),
-		Vector3d(0.5 * totalLen, 0.5 * totalLen, 1.5 * totalLen),
-		Vector3i(50, 50, 100));
-
+	RegularGrid rg(Vector3d(- totalLen, -totalLen, -totalLen),
+		Vector3d(totalLen, totalLen, 3.0 * totalLen),
+		Vector3i(100, 100, 200));
+	
 	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
-		"square_double_12.obj", 2e3, 1e-3, 400, 0.3, 0.0, 4e4, 0.0);
+		"square_random.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
 
 	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
