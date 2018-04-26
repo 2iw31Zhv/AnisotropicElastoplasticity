@@ -129,12 +129,13 @@ LagrangianMesh::LagrangianMesh(
 	const Eigen::MatrixX3i & faces,
 	const Eigen::MatrixX3d & vertexVelocities,
 	const Eigen::MatrixX3d & elementVelocities,
-	const std::vector<Eigen::Matrix3d>& elasticDeformationGradient,
-	const std::vector<Eigen::Matrix3d>& plasticDeformationGradient,
 	const Eigen::VectorXd& vertexMasses,
 	const Eigen::VectorXd& vertexVolumes,
 	const Eigen::VectorXd& elementMasses,
 	const Eigen::VectorXd& elementVolumes,
+	const Eigen::MatrixX3d& elementDirections_1,
+	const Eigen::MatrixX3d& elementDirections_2,
+	const Eigen::MatrixX3d& elementDirections_3,
 	const Eigen::MatrixX3d& elementRestDirections_1,
 	const Eigen::MatrixX3d& elementRestDirections_2,
 	const Eigen::MatrixX3d& elementRestDirections_3,
@@ -142,17 +143,18 @@ LagrangianMesh::LagrangianMesh(
 	double lambda,
 	double shearStiffness,
 	double stiffness,
-	double frictionCoeff) :
+	double frictionCoeff):
 	vertexPositions(vertexPositions),
 	faces(faces),
 	vertexVelocities(vertexVelocities),
 	elementVelocities(elementVelocities),
-	elasticDeformationGradient(elasticDeformationGradient),
-	plasticDeformationGradient(plasticDeformationGradient),
 	vertexMasses(vertexMasses),
 	vertexVolumes(vertexVolumes),
 	elementMasses(elementMasses),
 	elementVolumes(elementVolumes),
+	elementDirections_1(elementDirections_1),
+	elementDirections_2(elementDirections_2),
+	elementDirections_3(elementDirections_3),
 	elementRestDirections_1_(elementRestDirections_1),
 	elementRestDirections_2_(elementRestDirections_2),
 	elementRestDirections_3_(elementRestDirections_3),
@@ -280,9 +282,6 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 	elementVelocities.resize(F.rows(), 3);
 	elementVelocities.setZero();
 
-	vector<Matrix3d> elasticDeformationGradient;
-	vector<Matrix3d> plasticDeformationGradient;
-
 
 	VectorXd vertexVolumes;
 	vertexVolumes.resize(V.rows());
@@ -301,9 +300,6 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 
 	for (int f = 0; f < F.rows(); ++f)
 	{
-		elasticDeformationGradient.push_back(Matrix3d::Identity());
-		plasticDeformationGradient.push_back(Matrix3d::Identity());
-
 		const Vector3d& v1 = V.row(F.row(f)[0]);
 		const Vector3d& v2 = V.row(F.row(f)[1]);
 		const Vector3d& v3 = V.row(F.row(f)[2]);
@@ -333,12 +329,13 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 	return LagrangianMesh(V, F, 
 		vertexVelocities,
 		elementVelocities,
-		elasticDeformationGradient, 
-		plasticDeformationGradient,
 		vertexMasses,
 		vertexVolumes,
 		elementMasses,
 		elementVolumes,
+		elementRestDirections_1,
+		elementRestDirections_2,
+		elementRestDirections_3,
 		elementRestDirections_1,
 		elementRestDirections_2,
 		elementRestDirections_3,
@@ -369,6 +366,8 @@ void LagrangianMesh::updateElementPositions()
 void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 	std::vector<Eigen::Matrix2d>& inPlanePiolaKirhoffStresses)
 {
+	//ofstream fout("stresslog.txt", ios::app);
+	//fout << endl << "start" << endl;
 	int Nv = vertexPositions.rows();
 	vertexForces.resize(Nv, 3);
 	vertexForces.setZero();
@@ -378,6 +377,7 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 
 	for (int f = 0; f < Ne; ++f)
 	{
+		//fout << "begin" << endl;
 		Matrix3d restDirectionMatrix;
 		Vector3d D1, D2, D3;
 
@@ -389,7 +389,14 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		restDirectionMatrix.col(1) = D2;
 		restDirectionMatrix.col(2) = D3;
 
-		Matrix3d directionMatrix = elasticDeformationGradient[f] * restDirectionMatrix;
+		//fout << restDirectionMatrix << endl;
+
+		Matrix3d directionMatrix;
+		directionMatrix.col(0) = elementDirections_1.row(f);
+		directionMatrix.col(1) = elementDirections_2.row(f);
+		directionMatrix.col(2) = elementDirections_3.row(f);
+
+		//fout << directionMatrix << endl;
 
 		Matrix3d Q, R;
 		Vector3d q1, q2, q3;
@@ -415,20 +422,23 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		Matrix2d refInPlaneR = inPlaneR * invRest;
 
 		Matrix2d invRefMulDet;
-		invRefMulDet << R(1, 1), -R(0, 1),
-			0.0, R(0, 0);
+		invRefMulDet << refInPlaneR(1, 1), -refInPlaneR(0, 1),
+			0.0, refInPlaneR(0, 0);
 
 		JacobiSVD<Matrix2d> svd(refInPlaneR, ComputeFullU | ComputeFullV);
 		Matrix2d rotation = svd.matrixU() * svd.matrixV().transpose();
 		Matrix2d symmetry = svd.matrixV() * svd.singularValues().asDiagonal()
 			* svd.matrixV().transpose() - Matrix2d::Identity();
 		double J = refInPlaneR.diagonal().prod() - 1.0;
+
 		forceRelaxer(rotation, symmetry, J, 1e-15);
 
 		Matrix2d piolaKirhoffStress = 2.0 * mu * rotation * symmetry
 			+ lambda * J * invRefMulDet.transpose();
 
 		inPlanePiolaKirhoffStresses[f] = piolaKirhoffStress;
+
+		//fout << piolaKirhoffStress << endl;
 
 		double dr11 = piolaKirhoffStress(0, 0),
 			dr12 = piolaKirhoffStress(0, 1),

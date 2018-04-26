@@ -56,8 +56,9 @@ public:
 	Eigen::VectorXd areas;
 	std::vector< Eigen::Matrix2d> inverseMetrics;
 
-	std::vector<Eigen::Matrix3d> plasticDeformationGradient;
-	std::vector<Eigen::Matrix3d> elasticDeformationGradient;
+	Eigen::MatrixX3d elementDirections_1;
+	Eigen::MatrixX3d elementDirections_2;
+	Eigen::MatrixX3d elementDirections_3;
 
 	double mu;
 	double lambda;
@@ -71,12 +72,13 @@ public:
 		const Eigen::MatrixX3i& faces,
 		const Eigen::MatrixX3d& vertexVelocities,
 		const Eigen::MatrixX3d& elementVelocities,
-		const std::vector<Eigen::Matrix3d>& elasticDeformationGradient,
-		const std::vector<Eigen::Matrix3d>& plasticDeformationGradient,
 		const Eigen::VectorXd& vertexMasses,
 		const Eigen::VectorXd& vertexVolumes,
 		const Eigen::VectorXd& elementMasses,
 		const Eigen::VectorXd& elementVolumes,
+		const Eigen::MatrixX3d& elementDirections_1,
+		const Eigen::MatrixX3d& elementDirections_2,
+		const Eigen::MatrixX3d& elementDirections_3,
 		const Eigen::MatrixX3d& elementRestDirections_1,
 		const Eigen::MatrixX3d& elementRestDirections_2,
 		const Eigen::MatrixX3d& elementRestDirections_3,

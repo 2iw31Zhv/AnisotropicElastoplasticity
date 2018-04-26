@@ -52,7 +52,7 @@ int main()
 	double gridLen = 1.0 / meshRes;
 	double totalLen = 50.0 * gridLen;
 
-	RegularGrid rg(Vector3d(- totalLen, -totalLen, -totalLen),
+	RegularGrid rg(Vector3d(- totalLen, -totalLen, - totalLen),
 		Vector3d(totalLen, totalLen, 3.0 * totalLen),
 		Vector3i(100, 100, 200));
 	
@@ -73,7 +73,7 @@ int main()
 	solver.bindViewer(&viewer);
 
 	
-	viewer.core.point_size = 2.0;
+	viewer.core.point_size = 3.0;
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
 	viewer.core.show_lines = true;

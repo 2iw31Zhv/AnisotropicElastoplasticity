@@ -15,6 +15,54 @@ using namespace igl;
 
 #define AFFINE_PIC
 
+void matrixRelaxer(
+	Eigen::MatrixX3d& matrix,
+	double tolerance = 1e-20)
+{
+	for (int p = 0; p < matrix.rows(); ++p)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (fabs(matrix(p, i)) < tolerance)
+			{
+				matrix(p, i) = 0.0;
+			}
+		}
+	}
+}
+
+void matrix33Relaxer(
+	Eigen::Matrix3d& matrix,
+	double tolerance = 1e-20)
+{
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 3; ++j)
+		{
+			if (i != j && fabs(matrix(i, j)) < tolerance)
+			{
+				matrix(i, j) = 0.0;
+			}
+			else if (i == j && fabs(matrix(i, j) - 1.0) < tolerance)
+			{
+				matrix(i, j) = 1.0;
+			}
+		}
+	}
+}
+
+void vector3Relaxer(
+	Eigen::Vector3d& vector,
+	double tolerance = 1e-20)
+{
+	for (int i = 0; i < 3; ++i)
+	{
+		if (fabs(vector[i]) < tolerance)
+		{
+			vector[i] = 0.0;
+		}
+	}
+}
 void HybridSolver::evaluateInterpolationWeights_(
 	Eigen::SparseMatrix<double>& omegas,
 	Eigen::SparseMatrix<double>& domegas_1,
@@ -343,78 +391,77 @@ void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 
 		mesh_->computeVertexInPlaneForces(vertexInPlaneForces,
 			inPlanePiolaKirhoffStresses);
-
-		//ofstream fout("inplaneforce.txt", ios::app);
-		//fout << endl << vertexInPlaneForces << endl;
-
-		//rg_->forces += vertexOmegas_.transpose() * vertexInPlaneForces;
+		rg_->forces += vertexOmegas_.transpose() * vertexInPlaneForces;
 
 		// evaluate the normal forces
-		//int Nf = mesh_->faces.rows();
+		int Nf = mesh_->faces.rows();
 
-		//VectorXd meshStress_11(Nf), meshStress_12(Nf), meshStress_13(Nf),
-		//	meshStress_21(Nf), meshStress_22(Nf), meshStress_23(Nf),
-		//	meshStress_31(Nf), meshStress_32(Nf), meshStress_33(Nf);
+		VectorXd meshStress_11(Nf), meshStress_12(Nf), meshStress_13(Nf),
+			meshStress_21(Nf), meshStress_22(Nf), meshStress_23(Nf),
+			meshStress_31(Nf), meshStress_32(Nf), meshStress_33(Nf);
 
-		//for (int f = 0; f < mesh_->faces.rows(); ++f)
-		//{
-		//	Matrix3d restDirectionMatrix;
-		//	restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
-		//	restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
-		//	restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
+		for (int f = 0; f < mesh_->faces.rows(); ++f)
+		{
+			Matrix3d restDirectionMatrix;
+			restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
+			restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
+			restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
 
-		//	Matrix3d directionMatrix = mesh_->elasticDeformationGradient[f] * restDirectionMatrix;
+			Matrix3d directionMatrix;
+			directionMatrix.col(0) = mesh_->elementDirections_1.row(f);
+			directionMatrix.col(1) = mesh_->elementDirections_2.row(f);
+			directionMatrix.col(2) = mesh_->elementDirections_3.row(f);
 
-		//	Matrix3d Q, R;
-		//	GramSchmidtOrthonomalization(Q, R, directionMatrix);
+			Matrix3d Q, R;
+			GramSchmidtOrthonomalization(Q, R, directionMatrix);
 
-		//	const Matrix2d& inPlaneDr = inPlanePiolaKirhoffStresses[f];
-		//	double dr11 = inPlaneDr(0, 0);
-		//	double dr12 = inPlaneDr(0, 1);
-		//	double dr22 = inPlaneDr(1, 1);
+			const Matrix2d& inPlaneDr = inPlanePiolaKirhoffStresses[f];
+			double dr11 = inPlaneDr(0, 0);
+			double dr12 = inPlaneDr(0, 1);
+			double dr22 = inPlaneDr(1, 1);
 
-		//	double dr13 = mesh_->shearStiffness * R(0, 2);
-		//	double dr23 = mesh_->shearStiffness * R(1, 2);
+			double dr13 = mesh_->shearStiffness * R(0, 2);
+			double dr23 = mesh_->shearStiffness * R(1, 2);
 
-		//	double dr33 = R(2, 2) > 1.0 ? 0.0 : mesh_->stiffness * (1.0 - R(2, 2))
-		//		* (1.0 - R(2, 2));
+			double dr33 = R(2, 2) > 1.0 ? 0.0 : mesh_->stiffness * (1.0 - R(2, 2))
+				* (1.0 - R(2, 2));
 
-		//	Matrix3d dR;
-		//	dR << dr11, dr12, dr13,
-		//		0.0, dr22, dr23,
-		//		0.0, 0.0, dr33;
-		//	Matrix3d K = dR * R.transpose();
+			Matrix3d dR;
+			dR << dr11, dr12, dr13,
+				0.0, dr22, dr23,
+				0.0, 0.0, dr33;
+			Matrix3d K = dR * R.transpose();
 
-		//	Vector3d dF3 = Q * (K.triangularView<StrictlyUpper>().toDenseMatrix()
-		//		+ K.triangularView<Upper>().transpose().toDenseMatrix()) * R.inverse().transpose()
-		//		* restDirectionMatrix.transpose().col(2);
+			Vector3d dF3 = Q * (K.triangularView<StrictlyUpper>().toDenseMatrix()
+				+ K.triangularView<Upper>().transpose().toDenseMatrix()) * R.inverse().transpose()
+				* restDirectionMatrix.transpose().col(2);
 
-		//	Matrix3d meshStress = mesh_->elementVolumes[f] * dF3 * directionMatrix.col(2).transpose();
+			Matrix3d meshStress = mesh_->elementVolumes[f] * dF3 * directionMatrix.col(2).transpose();
 
-		//	meshStress_11[f] = meshStress(0, 0);
-		//	meshStress_12[f] = meshStress(0, 1);
-		//	meshStress_13[f] = meshStress(0, 2);
+			meshStress_11[f] = meshStress(0, 0);
+			meshStress_12[f] = meshStress(0, 1);
+			meshStress_13[f] = meshStress(0, 2);
 
-		//	meshStress_21[f] = meshStress(1, 0);
-		//	meshStress_22[f] = meshStress(1, 1);
-		//	meshStress_23[f] = meshStress(1, 2);
+			meshStress_21[f] = meshStress(1, 0);
+			meshStress_22[f] = meshStress(1, 1);
+			meshStress_23[f] = meshStress(1, 2);
 
-		//	meshStress_31[f] = meshStress(2, 0);
-		//	meshStress_32[f] = meshStress(2, 1);
-		//	meshStress_33[f] = meshStress(2, 2);
-		//}
+			meshStress_31[f] = meshStress(2, 0);
+			meshStress_32[f] = meshStress(2, 1);
+			meshStress_33[f] = meshStress(2, 2);
+		}
 
-		//rg_->forces.col(0) -= delementOmegas_1_.transpose() * meshStress_11;
-		//rg_->forces.col(0) -= delementOmegas_2_.transpose() * meshStress_12;
-		//rg_->forces.col(0) -= delementOmegas_3_.transpose() * meshStress_13;
+		rg_->forces.col(0) -= delementOmegas_1_.transpose() * meshStress_11;
+		rg_->forces.col(0) -= delementOmegas_2_.transpose() * meshStress_12;
+		rg_->forces.col(0) -= delementOmegas_3_.transpose() * meshStress_13;
 
-		//rg_->forces.col(1) -= delementOmegas_1_.transpose() * meshStress_21;
-		//rg_->forces.col(1) -= delementOmegas_2_.transpose() * meshStress_22;
-		//rg_->forces.col(1) -= delementOmegas_3_.transpose() * meshStress_23;
+		rg_->forces.col(1) -= delementOmegas_1_.transpose() * meshStress_21;
+		rg_->forces.col(1) -= delementOmegas_2_.transpose() * meshStress_22;
+		rg_->forces.col(1) -= delementOmegas_3_.transpose() * meshStress_23;
 
-		//rg_->forces.col(2) -= delementOmegas_1_.transpose() * meshStress_31;
-		//rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
-		//rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
+		rg_->forces.col(2) -= delementOmegas_1_.transpose() * meshStress_31;
+		rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
+		rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
 	}
 }
 
@@ -583,44 +630,54 @@ void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
 		}
 	}
 
+	//ofstream fout("deformationlog.txt", ios::app);
+	//fout << "start" << endl;
+
 	if (mesh_ != nullptr)
 	{
+		MatrixX3d candidateGridPositions = rg_->positions() + Dt * rg_->velocities;
 		MatrixX3d candidateVertexPositions = mesh_->vertexPositions
-			+ Dt * mesh_->vertexVelocities;
+			+ Dt * vertexOmegas_ * rg_->velocities;
+		matrixRelaxer(candidateVertexPositions, 1e-12);
 
-		MatrixX3d elementEDGModifiers_col_1 = Dt * delementOmegas_1_ * rg_->velocities;
-		MatrixX3d elementEDGModifiers_col_2 = Dt * delementOmegas_2_ * rg_->velocities;
-		MatrixX3d elementEDGModifiers_col_3 = Dt * delementOmegas_3_ * rg_->velocities;
+		//fout << candidateVertexPositions << endl;
 
-		for (int f = 0; f < mesh_->elasticDeformationGradient.size(); ++f)
+		const MatrixX3d& elementMultiplier_col_1 = delementOmegas_1_ * candidateGridPositions;
+		const MatrixX3d& elementMultiplier_col_2 = delementOmegas_2_ * candidateGridPositions;
+		const MatrixX3d& elementMultiplier_col_3 = delementOmegas_3_ * candidateGridPositions;
+
+		for (int f = 0; f < mesh_->elementDirections_1.rows(); ++f)
 		{
 			Matrix3d restDirectionMatrix;
 			restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
 			restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
 			restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
 
+			
+			//fout << "begin" << endl;
 			Vector3d d1 = candidateVertexPositions.row(mesh_->faces.row(f)[1])
 				- candidateVertexPositions.row(mesh_->faces.row(f)[0]);
+			vector3Relaxer(d1, 1e-12);
+
 			Vector3d d2 = candidateVertexPositions.row(mesh_->faces.row(f)[2])
 				- candidateVertexPositions.row(mesh_->faces.row(f)[0]);
 
-			Matrix3d elementMod;
-			elementMod.col(0) = elementEDGModifiers_col_1.row(f);
-			elementMod.col(1) = elementEDGModifiers_col_2.row(f);
-			elementMod.col(2) = elementEDGModifiers_col_3.row(f);
+			vector3Relaxer(d2, 1e-12);
+			//fout << d1.transpose() << ", " << restDirectionMatrix.col(0).transpose() << endl;
+			//fout << d2.transpose() << ", " << restDirectionMatrix.col(1).transpose() << endl;
 
-			Vector3d origin_d3 = mesh_->elasticDeformationGradient[f]
-				* restDirectionMatrix.col(2);
-			Vector3d d3 = origin_d3 + elementMod * origin_d3;
+			Matrix3d elementMul;
+			elementMul.col(0) = elementMultiplier_col_1.row(f);
+			elementMul.col(1) = elementMultiplier_col_2.row(f);
+			elementMul.col(2) = elementMultiplier_col_3.row(f);
+
+			Vector3d d3 = elementMul * (mesh_->elementDirections_3.row(f).transpose());
+			vector3Relaxer(d3, 1e-16);
 
 			Matrix3d virtualElementDirection;
 			virtualElementDirection.col(0) = d1;
 			virtualElementDirection.col(1) = d2;
 			virtualElementDirection.col(2) = d3;
-
-			Matrix3d virtualEDG = virtualElementDirection * restDirectionMatrix.inverse();
-
-			Matrix3d totalEDG = virtualEDG * mesh_->plasticDeformationGradient[f];
 
 			Matrix3d Q, R;
 			GramSchmidtOrthonomalization(Q, R, virtualElementDirection);
@@ -634,12 +691,6 @@ void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
 			}
 			else
 			{
-				Vector3d traction = (
-					mesh_->shearStiffness * (R(0, 2) * Q.col(0)
-						+ R(1, 2) * Q.col(1))
-					+ mesh_->stiffness * (R(2, 2) - 1.0) * (R(2, 2) - 1.0) * Q.col(2)
-					) / R(0, 0) / R(1, 1);
-				Vector3d n = Q.col(2);
 				double normalForce = mesh_->stiffness * (R(2, 2) - 1.0) * (R(2, 2) - 1.0);
 				double shearForce = mesh_->shearStiffness * sqrt(
 					R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2));
@@ -652,9 +703,11 @@ void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
 				}
 			}
 
-			mesh_->elasticDeformationGradient[f] = Q * R * restDirectionMatrix.inverse();
-			mesh_->plasticDeformationGradient[f] = mesh_->elasticDeformationGradient[f].inverse()
-				* totalEDG;
+			d3 = Q * R.col(2);
+
+			mesh_->elementDirections_1.row(f) = d1;
+			mesh_->elementDirections_2.row(f) = d2;
+			mesh_->elementDirections_3.row(f) = d3;
 
 		}
 	}
@@ -691,6 +744,7 @@ void HybridSolver::updateGridVelocities_(double Dt, double tolerance,
 void HybridSolver::updateParticleVelocities_(double alpha, double Dt,
 	const Eigen::MatrixX3d& gridVelocityChanges)
 {
+
 #if defined(AFFINE_PIC)
 	if (ps_ != nullptr)
 	{
@@ -701,18 +755,25 @@ void HybridSolver::updateParticleVelocities_(double alpha, double Dt,
 	{
 		mesh_->elementVelocities = elementOmegas_ * rg_->velocities;
 		mesh_->vertexVelocities = vertexOmegas_ * rg_->velocities;
+		matrixRelaxer(mesh_->elementVelocities, 1e-12);
+		matrixRelaxer(mesh_->vertexVelocities, 1e-12);
 	}
+
 	//ofstream fout("vellog.txt", ios::app);
 	//VectorXd gridUnit(rg_->gridNumber());
 	//gridUnit.setOnes();
 
-	//fout << "gridVelz" << endl << rg_->velocities.col(2) << endl;
-	//fout << "particle omega" << endl << omegas_ * gridUnit << endl;
+	//MatrixX3d gridZero;
+	//gridZero.resize(rg_->gridNumber(), 3);
+	//gridZero.setZero();
+
+	//fout << "gridVelz" << endl << rg_->velocities << endl;
+	////fout << "particle omega" << endl << omegas_ * gridUnit << endl;
 	//fout << "vertex omega" << endl << vertexOmegas_ * gridUnit << endl;
 	//fout << "element omega" << endl << elementOmegas_ * gridUnit << endl;
 	//
-	//fout << "particlevel" << endl << ps_->velocities << endl;
-	//fout << "meshvel" << endl << mesh_->vertexVelocities << endl;
+	////fout << "particlevel" << endl << ps_->velocities << endl;
+	//fout << "meshvel" << endl << mesh_->vertexVelocities<< endl;
 
 #else
 	if (ps_ != nullptr)
@@ -807,7 +868,7 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
-		double Dt = 0.3 / max(3e3, rg_->CFL_condition());
+		double Dt = CFL / max(3e3, rg_->CFL_condition());
 		//double Dt = 1e-5;
 
 		clog << "time: " << t << ", ";
@@ -822,7 +883,8 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		gridVelocityChanges.resize(rg_->velocities.rows(), 3);
 
 		updateGridVelocities_(Dt, 1e-20, gridVelocityChanges);
-
+		Dt = CFL / max(3e3, rg_->CFL_condition());
+		clog << "delta t: " << Dt << endl;
 		//fout << "gridvel" << endl << rg_->velocities << endl;
 		clog << "done!\n";
 
@@ -859,14 +921,14 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 				vertexOmegas_,
 				mesh_->vertexPositions,
 				mesh_->vertexVelocities,
-				0.0);
+				0.9);
 			updateAffineMomenta_(mesh_->elementAffineMomenta_1,
 				mesh_->elementAffineMomenta_2,
 				mesh_->elementAffineMomenta_3,
 				elementOmegas_,
 				mesh_->elementPositions,
 				mesh_->elementVelocities,
-				0.0);
+				0.9);
 		}
 		clog << "done!\n";
 
@@ -881,11 +943,13 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		if (mesh_ != nullptr)
 		{
 			mesh_->vertexPositions += Dt * mesh_->vertexVelocities;
+			matrixRelaxer(mesh_->vertexPositions, 1e-12);
 
 			//fout << "particle" << endl << ps_->positions - restpPos << endl;
-			//fout << "mesh" << endl << mesh_->vertexPositions << endl;
+			fout << "mesh" << endl << mesh_->vertexPositions << endl;
 
 			mesh_->updateElementPositions();
+			matrixRelaxer(mesh_->elementPositions, 1e-12);
 		}
 		clog << "done!\n";
 
