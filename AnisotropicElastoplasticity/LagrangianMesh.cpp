@@ -428,13 +428,13 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		JacobiSVD<Matrix2d> svd(refInPlaneR, ComputeFullU | ComputeFullV);
 		Matrix2d rotation = svd.matrixU() * svd.matrixV().transpose();
 		Matrix2d symmetry = svd.matrixV() * svd.singularValues().asDiagonal()
-			* svd.matrixV().transpose() - Matrix2d::Identity();
-		double J = refInPlaneR.diagonal().prod() - 1.0;
+			* svd.matrixV().transpose();
+		double J = refInPlaneR.diagonal().prod();
 
-		forceRelaxer(rotation, symmetry, J, 1e-15);
+		//forceRelaxer(rotation, symmetry, J, 1e-15);
 
-		Matrix2d piolaKirhoffStress = 2.0 * mu * rotation * symmetry
-			+ lambda * J * invRefMulDet.transpose();
+		Matrix2d piolaKirhoffStress = 2.0 * mu * (refInPlaneR - rotation)
+			+ lambda * (J - 1.0) * invRefMulDet.transpose();
 
 		inPlanePiolaKirhoffStresses[f] = piolaKirhoffStress;
 

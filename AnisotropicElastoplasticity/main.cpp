@@ -48,18 +48,19 @@ int main()
 		2.0,
 		1e4);
 
-	double meshRes = 28.4;
+	double meshRes = 12;
 	double gridLen = 1.0 / meshRes;
+
 	double totalLen = 50.0 * gridLen;
 
-	RegularGrid rg(Vector3d(- totalLen, -totalLen, - totalLen),
-		Vector3d(totalLen, totalLen, 3.0 * totalLen),
-		Vector3i(100, 100, 200));
+	RegularGrid rg(Vector3d(- 0.25 * totalLen, - 0.25 * totalLen, - 0.25 * totalLen),
+		Vector3d(0.25 * totalLen, 0.25 * totalLen, 0.25 * totalLen),
+		Vector3i(25, 25, 25));
 	
 	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
-		"square_random.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
+		"square_double_12.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
 
-	solver.setParticleSystem(&ps);
+	//solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
 	solver.setLagrangianMesh(&mesh);
 

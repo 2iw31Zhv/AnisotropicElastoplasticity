@@ -266,6 +266,8 @@ void HybridSolver::particleToGrid_(double tolerance, bool evaluateVolumesAndDens
 
 void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 {
+	rg_->forces.setZero();
+
 	if (ps_ != nullptr)
 	{
 		int numParticles = ps_->elasticDeformationGradients.size();
@@ -366,7 +368,7 @@ void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 			cauchyStress_33_[p] = cauchyStress(2, 2);
 		}
 
-		rg_->forces.setZero();
+		
 
 		rg_->forces.col(0) -= domegas_1_.transpose() * cauchyStress_11_;
 		rg_->forces.col(0) -= domegas_2_.transpose() * cauchyStress_12_;
@@ -394,74 +396,74 @@ void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 		rg_->forces += vertexOmegas_.transpose() * vertexInPlaneForces;
 
 		// evaluate the normal forces
-		int Nf = mesh_->faces.rows();
+		//int Nf = mesh_->faces.rows();
 
-		VectorXd meshStress_11(Nf), meshStress_12(Nf), meshStress_13(Nf),
-			meshStress_21(Nf), meshStress_22(Nf), meshStress_23(Nf),
-			meshStress_31(Nf), meshStress_32(Nf), meshStress_33(Nf);
+		//VectorXd meshStress_11(Nf), meshStress_12(Nf), meshStress_13(Nf),
+		//	meshStress_21(Nf), meshStress_22(Nf), meshStress_23(Nf),
+		//	meshStress_31(Nf), meshStress_32(Nf), meshStress_33(Nf);
 
-		for (int f = 0; f < mesh_->faces.rows(); ++f)
-		{
-			Matrix3d restDirectionMatrix;
-			restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
-			restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
-			restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
+		//for (int f = 0; f < mesh_->faces.rows(); ++f)
+		//{
+		//	Matrix3d restDirectionMatrix;
+		//	restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
+		//	restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
+		//	restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
 
-			Matrix3d directionMatrix;
-			directionMatrix.col(0) = mesh_->elementDirections_1.row(f);
-			directionMatrix.col(1) = mesh_->elementDirections_2.row(f);
-			directionMatrix.col(2) = mesh_->elementDirections_3.row(f);
+		//	Matrix3d directionMatrix;
+		//	directionMatrix.col(0) = mesh_->elementDirections_1.row(f);
+		//	directionMatrix.col(1) = mesh_->elementDirections_2.row(f);
+		//	directionMatrix.col(2) = mesh_->elementDirections_3.row(f);
 
-			Matrix3d Q, R;
-			GramSchmidtOrthonomalization(Q, R, directionMatrix);
+		//	Matrix3d Q, R;
+		//	GramSchmidtOrthonomalization(Q, R, directionMatrix);
 
-			const Matrix2d& inPlaneDr = inPlanePiolaKirhoffStresses[f];
-			double dr11 = inPlaneDr(0, 0);
-			double dr12 = inPlaneDr(0, 1);
-			double dr22 = inPlaneDr(1, 1);
+		//	const Matrix2d& inPlaneDr = inPlanePiolaKirhoffStresses[f];
+		//	double dr11 = inPlaneDr(0, 0);
+		//	double dr12 = inPlaneDr(0, 1);
+		//	double dr22 = inPlaneDr(1, 1);
 
-			double dr13 = mesh_->shearStiffness * R(0, 2);
-			double dr23 = mesh_->shearStiffness * R(1, 2);
+		//	double dr13 = mesh_->shearStiffness * R(0, 2);
+		//	double dr23 = mesh_->shearStiffness * R(1, 2);
 
-			double dr33 = R(2, 2) > 1.0 ? 0.0 : mesh_->stiffness * (1.0 - R(2, 2))
-				* (1.0 - R(2, 2));
+		//	double dr33 = R(2, 2) > 1.0 ? 0.0 : mesh_->stiffness * (1.0 - R(2, 2))
+		//		* (1.0 - R(2, 2));
 
-			Matrix3d dR;
-			dR << dr11, dr12, dr13,
-				0.0, dr22, dr23,
-				0.0, 0.0, dr33;
-			Matrix3d K = dR * R.transpose();
+		//	Matrix3d dR;
+		//	dR << dr11, dr12, dr13,
+		//		0.0, dr22, dr23,
+		//		0.0, 0.0, dr33;
+		//	Matrix3d K = dR * R.transpose();
 
-			Vector3d dF3 = Q * (K.triangularView<StrictlyUpper>().toDenseMatrix()
-				+ K.triangularView<Upper>().transpose().toDenseMatrix()) * R.inverse().transpose()
-				* restDirectionMatrix.transpose().col(2);
+		//	Vector3d dF3 = Q * (K.triangularView<StrictlyUpper>().toDenseMatrix()
+		//		+ K.triangularView<Upper>().transpose().toDenseMatrix()) * R.inverse().transpose()
+		//		* restDirectionMatrix.transpose().col(2);
 
-			Matrix3d meshStress = mesh_->elementVolumes[f] * dF3 * directionMatrix.col(2).transpose();
+		//	Matrix3d meshStress = mesh_->elementVolumes[f] * dF3 * directionMatrix.col(2).transpose();
 
-			meshStress_11[f] = meshStress(0, 0);
-			meshStress_12[f] = meshStress(0, 1);
-			meshStress_13[f] = meshStress(0, 2);
+		//	meshStress_11[f] = meshStress(0, 0);
+		//	meshStress_12[f] = meshStress(0, 1);
+		//	meshStress_13[f] = meshStress(0, 2);
 
-			meshStress_21[f] = meshStress(1, 0);
-			meshStress_22[f] = meshStress(1, 1);
-			meshStress_23[f] = meshStress(1, 2);
+		//	meshStress_21[f] = meshStress(1, 0);
+		//	meshStress_22[f] = meshStress(1, 1);
+		//	meshStress_23[f] = meshStress(1, 2);
 
-			meshStress_31[f] = meshStress(2, 0);
-			meshStress_32[f] = meshStress(2, 1);
-			meshStress_33[f] = meshStress(2, 2);
-		}
+		//	meshStress_31[f] = meshStress(2, 0);
+		//	meshStress_32[f] = meshStress(2, 1);
+		//	meshStress_33[f] = meshStress(2, 2);
+		//}
 
-		rg_->forces.col(0) -= delementOmegas_1_.transpose() * meshStress_11;
-		rg_->forces.col(0) -= delementOmegas_2_.transpose() * meshStress_12;
-		rg_->forces.col(0) -= delementOmegas_3_.transpose() * meshStress_13;
+		//rg_->forces.col(0) -= delementOmegas_1_.transpose() * meshStress_11;
+		//rg_->forces.col(0) -= delementOmegas_2_.transpose() * meshStress_12;
+		//rg_->forces.col(0) -= delementOmegas_3_.transpose() * meshStress_13;
 
-		rg_->forces.col(1) -= delementOmegas_1_.transpose() * meshStress_21;
-		rg_->forces.col(1) -= delementOmegas_2_.transpose() * meshStress_22;
-		rg_->forces.col(1) -= delementOmegas_3_.transpose() * meshStress_23;
+		//rg_->forces.col(1) -= delementOmegas_1_.transpose() * meshStress_21;
+		//rg_->forces.col(1) -= delementOmegas_2_.transpose() * meshStress_22;
+		//rg_->forces.col(1) -= delementOmegas_3_.transpose() * meshStress_23;
 
-		rg_->forces.col(2) -= delementOmegas_1_.transpose() * meshStress_31;
-		rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
-		rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
+		//rg_->forces.col(2) -= delementOmegas_1_.transpose() * meshStress_31;
+		//rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
+		//rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
 	}
 }
 
@@ -518,7 +520,10 @@ void HybridSolver::gridCollisionHandling_(Eigen::MatrixX3d& gridVelocityChanges)
 	{
 		VectorXd vertexIsFixed(vertexOmegas_.rows());
 		vertexIsFixed.setZero();
-		vertexIsFixed.segment<4>(0).setOnes();
+		vertexIsFixed[0] = 1.0;
+		vertexIsFixed[24] = 1.0;
+		vertexIsFixed[624] = 1.0;
+		vertexIsFixed[600] = 1.0;
 
 		// handle fixed cloth vertex
 		for (int s = 0; s < vertexOmegas_.outerSize(); ++s)
@@ -868,8 +873,8 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
-		double Dt = CFL / max(3e3, rg_->CFL_condition());
-		//double Dt = 1e-5;
+		//double Dt = CFL / max(3e3, rg_->CFL_condition());
+		double Dt = 1e-4;
 
 		clog << "time: " << t << ", ";
 		clog << "delta t: " << Dt << endl;
@@ -883,7 +888,7 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		gridVelocityChanges.resize(rg_->velocities.rows(), 3);
 
 		updateGridVelocities_(Dt, 1e-20, gridVelocityChanges);
-		Dt = CFL / max(3e3, rg_->CFL_condition());
+		//Dt = CFL / max(3e3, rg_->CFL_condition());
 		clog << "delta t: " << Dt << endl;
 		//fout << "gridvel" << endl << rg_->velocities << endl;
 		clog << "done!\n";
@@ -921,14 +926,14 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 				vertexOmegas_,
 				mesh_->vertexPositions,
 				mesh_->vertexVelocities,
-				0.9);
+				0.0);
 			updateAffineMomenta_(mesh_->elementAffineMomenta_1,
 				mesh_->elementAffineMomenta_2,
 				mesh_->elementAffineMomenta_3,
 				elementOmegas_,
 				mesh_->elementPositions,
 				mesh_->elementVelocities,
-				0.9);
+				0.0);
 		}
 		clog << "done!\n";
 

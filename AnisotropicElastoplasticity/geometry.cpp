@@ -64,7 +64,7 @@ void GramSchmidtOrthonomalization(Eigen::Matrix3d & Q,
 #define POW2(x) ((x) * (x))
 #define POW4(x) ((x) * (x) * (x) * (x))
 
-Eigen::Matrix2d inverseR(const Eigen::Matrix2d R)
+Eigen::Matrix2d inverseR(const Eigen::Matrix2d& R)
 {
 	Matrix2d invR;
 	invR << 1.0 / R(0, 0), -R(0, 1) / R(0, 0) / R(1, 1),
