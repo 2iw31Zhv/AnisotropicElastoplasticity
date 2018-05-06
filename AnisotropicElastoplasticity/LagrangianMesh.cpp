@@ -173,11 +173,16 @@ LagrangianMesh::LagrangianMesh(
 	vertexAffineMomenta_1.resize(Nv, 3);
 	vertexAffineMomenta_2.resize(Nv, 3);
 	vertexAffineMomenta_3.resize(Nv, 3);
+	vertexAffineMomenta_1.setZero();
+	vertexAffineMomenta_2.setZero();
+	vertexAffineMomenta_3.setZero();
 
 	elementAffineMomenta_1.resize(Nf, 3);
 	elementAffineMomenta_2.resize(Nf, 3);
 	elementAffineMomenta_3.resize(Nf, 3);
-
+	elementAffineMomenta_1.setZero();
+	elementAffineMomenta_2.setZero();
+	elementAffineMomenta_3.setZero();
 	// set the element positions from the vertices
 	updateElementPositions();
 

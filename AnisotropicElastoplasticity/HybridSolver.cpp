@@ -166,6 +166,8 @@ void HybridSolver::particleToGrid_(double tolerance, bool evaluateVolumesAndDens
 		rg_->masses += vertexOmegas_.transpose() * mesh_->vertexMasses;
 		rg_->masses += elementOmegas_.transpose() * mesh_->elementMasses;
 	}
+
+
 	MatrixX3d momenta_i;
 	momenta_i.resize(rg_->gridNumber(), 3);
 	momenta_i.setZero();
@@ -189,7 +191,8 @@ void HybridSolver::particleToGrid_(double tolerance, bool evaluateVolumesAndDens
 		const MatrixX3d& particleAffineMomenta_3,
 		const MatrixX3d& particlePositions)
 	{
-		double inertiaTensorRatio = 3.0 / pow(rg_->h().prod(), 2.0 / 3.0);
+		double h = rg_->h().minCoeff();
+		double inertiaTensorRatio = 3.0 / (h * h);
 		const MatrixX3d& cellAffineMomenta_1 = inertiaTensorRatio
 			* omegas.transpose() * particleMasses.asDiagonal()
 			* particleAffineMomenta_1;
@@ -522,8 +525,8 @@ void HybridSolver::gridCollisionHandling_(Eigen::MatrixX3d& gridVelocityChanges)
 		vertexIsFixed.setZero();
 		vertexIsFixed[0] = 1.0;
 		vertexIsFixed[24] = 1.0;
-		vertexIsFixed[624] = 1.0;
-		vertexIsFixed[600] = 1.0;
+		//vertexIsFixed[624] = 1.0;
+		//vertexIsFixed[600] = 1.0;
 
 		// handle fixed cloth vertex
 		for (int s = 0; s < vertexOmegas_.outerSize(); ++s)
@@ -758,10 +761,18 @@ void HybridSolver::updateParticleVelocities_(double alpha, double Dt,
 
 	if (mesh_ != nullptr)
 	{
-		mesh_->elementVelocities = elementOmegas_ * rg_->velocities;
 		mesh_->vertexVelocities = vertexOmegas_ * rg_->velocities;
-		matrixRelaxer(mesh_->elementVelocities, 1e-12);
 		matrixRelaxer(mesh_->vertexVelocities, 1e-12);
+
+		for (int f = 0; f < mesh_->elementVelocities.rows(); ++f)
+		{
+			Vector3d vel_1 = mesh_->vertexVelocities.row(mesh_->faces.row(f)[0]);
+			Vector3d vel_2 = mesh_->vertexVelocities.row(mesh_->faces.row(f)[1]);
+			Vector3d vel_3 = mesh_->vertexVelocities.row(mesh_->faces.row(f)[2]);
+
+			mesh_->elementVelocities.row(f) = (vel_1 + vel_2 + vel_3) / 3.0;
+		}
+		matrixRelaxer(mesh_->elementVelocities, 1e-12);
 	}
 
 	//ofstream fout("vellog.txt", ios::app);
@@ -797,41 +808,42 @@ void HybridSolver::updateParticleVelocities_(double alpha, double Dt,
 }
 
 void HybridSolver::updateAffineMomenta_(
-Eigen::MatrixX3d& affineMomenta_1,
-Eigen::MatrixX3d& affineMomenta_2,
-Eigen::MatrixX3d& affineMomenta_3,
-const Eigen::SparseMatrix<double>& omegas,
-const Eigen::MatrixX3d& particlePositions,
-const Eigen::MatrixX3d& particleVelocities,
-double dampRatio)
+	Eigen::MatrixX3d& affineMomenta_1,
+	Eigen::MatrixX3d& affineMomenta_2,
+	Eigen::MatrixX3d& affineMomenta_3,
+	const Eigen::SparseMatrix<double>& omegas,
+	const Eigen::MatrixX3d& particlePositions,
+	const Eigen::MatrixX3d& particleVelocities,
+	double dampRatio)
 {
+	MatrixX3d particleVelocities_t = omegas * rg_->velocities;
 	affineMomenta_1 = omegas * rg_->velocities.col(0).asDiagonal()
 		* rg_->positions()
-		-particleVelocities.col(0).asDiagonal() * particlePositions;
+		-particleVelocities_t.col(0).asDiagonal() * particlePositions;
 	affineMomenta_2 = omegas * rg_->velocities.col(1).asDiagonal()
 		* rg_->positions()
-		- particleVelocities.col(1).asDiagonal() * particlePositions;
+		- particleVelocities_t.col(1).asDiagonal() * particlePositions;
 	affineMomenta_3 = omegas * rg_->velocities.col(2).asDiagonal()
 		* rg_->positions()
-		- particleVelocities.col(2).asDiagonal() * particlePositions;
+		- particleVelocities_t.col(2).asDiagonal() * particlePositions;
 
-	for (int i = 0; i < affineMomenta_1.rows(); ++i)
-	{
-		Matrix3d C;
-		C.row(0) = affineMomenta_1.row(i);
-		C.row(1) = affineMomenta_2.row(i);
-		C.row(2) = affineMomenta_3.row(i);
+	//for (int i = 0; i < affineMomenta_1.rows(); ++i)
+	//{
+	//	Matrix3d C;
+	//	C.row(0) = affineMomenta_1.row(i);
+	//	C.row(1) = affineMomenta_2.row(i);
+	//	C.row(2) = affineMomenta_3.row(i);
 
-		Matrix3d skew, symm;
-		symm << C(0, 0), 0.5 * (C(0, 1) + C(1, 0)), 0.5 * (C(0, 2) + C(2, 0)),
-			0.5 * (C(0, 1) + C(1, 0)), C(1, 1), 0.5 * (C(1, 2) + C(2, 1)),
-			0.5 * (C(0, 2) + C(2, 0)), 0.5 * (C(1, 2) + C(2, 1)), C(2, 2);
-		skew = C - symm;
-		C = skew + (1 - dampRatio) * symm;
-		affineMomenta_1.row(i) = C.row(0);
-		affineMomenta_2.row(i) = C.row(1);
-		affineMomenta_3.row(i) = C.row(2);
-	}
+	//	Matrix3d skew, symm;
+	//	symm << C(0, 0), 0.5 * (C(0, 1) + C(1, 0)), 0.5 * (C(0, 2) + C(2, 0)),
+	//		0.5 * (C(0, 1) + C(1, 0)), C(1, 1), 0.5 * (C(1, 2) + C(2, 1)),
+	//		0.5 * (C(0, 2) + C(2, 0)), 0.5 * (C(1, 2) + C(2, 1)), C(2, 2);
+	//	skew = C - symm;
+	//	C = skew + (1 - dampRatio) * symm;
+	//	affineMomenta_1.row(i) = C.row(0);
+	//	affineMomenta_2.row(i) = C.row(1);
+	//	affineMomenta_3.row(i) = C.row(2);
+	//}
 }
 
 void HybridSolver::solve(double CFL, double maxt, double alpha)
@@ -873,8 +885,7 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
-		//double Dt = CFL / max(3e3, rg_->CFL_condition());
-		double Dt = 1e-4;
+		double Dt = CFL / max(3e3, rg_->CFL_condition());
 
 		clog << "time: " << t << ", ";
 		clog << "delta t: " << Dt << endl;
@@ -888,7 +899,7 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		gridVelocityChanges.resize(rg_->velocities.rows(), 3);
 
 		updateGridVelocities_(Dt, 1e-20, gridVelocityChanges);
-		//Dt = CFL / max(3e3, rg_->CFL_condition());
+		Dt = CFL / max(3e3, rg_->CFL_condition());
 		clog << "delta t: " << Dt << endl;
 		//fout << "gridvel" << endl << rg_->velocities << endl;
 		clog << "done!\n";

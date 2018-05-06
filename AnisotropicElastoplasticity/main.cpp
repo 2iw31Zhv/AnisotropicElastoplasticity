@@ -53,9 +53,9 @@ int main()
 
 	double totalLen = 50.0 * gridLen;
 
-	RegularGrid rg(Vector3d(- 0.25 * totalLen, - 0.25 * totalLen, - 0.25 * totalLen),
-		Vector3d(0.25 * totalLen, 0.25 * totalLen, 0.25 * totalLen),
-		Vector3i(25, 25, 25));
+	RegularGrid rg(Vector3d(- 1.2 * totalLen, - 0.4 * totalLen, -0.9 * totalLen),
+		Vector3d(0.4 * totalLen, 0.4 * totalLen, 0.1 * totalLen),
+		Vector3i(80, 40, 50));
 	
 	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
 		"square_double_12.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
@@ -65,8 +65,8 @@ int main()
 	solver.setLagrangianMesh(&mesh);
 
 	using namespace std::placeholders;
-	LevelSet gls_m05 = bind(groundLevelSet, _1, -0.5);
-	DLevelSet dgls_m05 = bind(DgroundLevelSet, _1, -0.5);
+	LevelSet gls_m05 = bind(groundLevelSet, _1, -3.0);
+	DLevelSet dgls_m05 = bind(DgroundLevelSet, _1, -3.0);
 	//LevelSet w2g_110 = bind(wall2groundLevelSet, _1, 1.0, 1.0, 0.0);
 	//DLevelSet dw2g_110 = bind(Dwall2groundLevelSet, _1, 1.0, 1.0, 0.0);
 	solver.setLevelSet(gls_m05, dgls_m05);
