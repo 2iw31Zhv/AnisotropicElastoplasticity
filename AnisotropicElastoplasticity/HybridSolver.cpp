@@ -15,54 +15,55 @@ using namespace igl;
 
 #define AFFINE_PIC
 
-void matrixRelaxer(
-	Eigen::MatrixX3d& matrix,
-	double tolerance = 1e-20)
-{
-	for (int p = 0; p < matrix.rows(); ++p)
-	{
-		for (int i = 0; i < 3; ++i)
-		{
-			if (fabs(matrix(p, i)) < tolerance)
-			{
-				matrix(p, i) = 0.0;
-			}
-		}
-	}
-}
+//void matrixRelaxer(
+//	Eigen::MatrixX3d& matrix,
+//	double tolerance = 1e-20)
+//{
+//	for (int p = 0; p < matrix.rows(); ++p)
+//	{
+//		for (int i = 0; i < 3; ++i)
+//		{
+//			if (fabs(matrix(p, i)) < tolerance)
+//			{
+//				matrix(p, i) = 0.0;
+//			}
+//		}
+//	}
+//}
+//
+//void matrix33Relaxer(
+//	Eigen::Matrix3d& matrix,
+//	double tolerance = 1e-20)
+//{
+//	for (int i = 0; i < 3; ++i)
+//	{
+//		for (int j = 0; j < 3; ++j)
+//		{
+//			if (i != j && fabs(matrix(i, j)) < tolerance)
+//			{
+//				matrix(i, j) = 0.0;
+//			}
+//			else if (i == j && fabs(matrix(i, j) - 1.0) < tolerance)
+//			{
+//				matrix(i, j) = 1.0;
+//			}
+//		}
+//	}
+//}
+//
+//void vector3Relaxer(
+//	Eigen::Vector3d& vector,
+//	double tolerance = 1e-20)
+//{
+//	for (int i = 0; i < 3; ++i)
+//	{
+//		if (fabs(vector[i]) < tolerance)
+//		{
+//			vector[i] = 0.0;
+//		}
+//	}
+//}
 
-void matrix33Relaxer(
-	Eigen::Matrix3d& matrix,
-	double tolerance = 1e-20)
-{
-	for (int i = 0; i < 3; ++i)
-	{
-		for (int j = 0; j < 3; ++j)
-		{
-			if (i != j && fabs(matrix(i, j)) < tolerance)
-			{
-				matrix(i, j) = 0.0;
-			}
-			else if (i == j && fabs(matrix(i, j) - 1.0) < tolerance)
-			{
-				matrix(i, j) = 1.0;
-			}
-		}
-	}
-}
-
-void vector3Relaxer(
-	Eigen::Vector3d& vector,
-	double tolerance = 1e-20)
-{
-	for (int i = 0; i < 3; ++i)
-	{
-		if (fabs(vector[i]) < tolerance)
-		{
-			vector[i] = 0.0;
-		}
-	}
-}
 void HybridSolver::evaluateInterpolationWeights_(
 	Eigen::SparseMatrix<double>& omegas,
 	Eigen::SparseMatrix<double>& domegas_1,
@@ -399,74 +400,74 @@ void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 		rg_->forces += vertexOmegas_.transpose() * vertexInPlaneForces;
 
 		// evaluate the normal forces
-		//int Nf = mesh_->faces.rows();
+		int Nf = mesh_->faces.rows();
 
-		//VectorXd meshStress_11(Nf), meshStress_12(Nf), meshStress_13(Nf),
-		//	meshStress_21(Nf), meshStress_22(Nf), meshStress_23(Nf),
-		//	meshStress_31(Nf), meshStress_32(Nf), meshStress_33(Nf);
+		VectorXd meshStress_11(Nf), meshStress_12(Nf), meshStress_13(Nf),
+			meshStress_21(Nf), meshStress_22(Nf), meshStress_23(Nf),
+			meshStress_31(Nf), meshStress_32(Nf), meshStress_33(Nf);
 
-		//for (int f = 0; f < mesh_->faces.rows(); ++f)
-		//{
-		//	Matrix3d restDirectionMatrix;
-		//	restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
-		//	restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
-		//	restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
+		for (int f = 0; f < mesh_->faces.rows(); ++f)
+		{
+			Matrix3d restDirectionMatrix;
+			restDirectionMatrix.col(0) = mesh_->elementRestDirections_1().row(f);
+			restDirectionMatrix.col(1) = mesh_->elementRestDirections_2().row(f);
+			restDirectionMatrix.col(2) = mesh_->elementRestDirections_3().row(f);
 
-		//	Matrix3d directionMatrix;
-		//	directionMatrix.col(0) = mesh_->elementDirections_1.row(f);
-		//	directionMatrix.col(1) = mesh_->elementDirections_2.row(f);
-		//	directionMatrix.col(2) = mesh_->elementDirections_3.row(f);
+			Matrix3d directionMatrix;
+			directionMatrix.col(0) = mesh_->elementDirections_1.row(f);
+			directionMatrix.col(1) = mesh_->elementDirections_2.row(f);
+			directionMatrix.col(2) = mesh_->elementDirections_3.row(f);
 
-		//	Matrix3d Q, R;
-		//	GramSchmidtOrthonomalization(Q, R, directionMatrix);
+			Matrix3d Q, R;
+			GramSchmidtOrthonomalization(Q, R, directionMatrix);
 
-		//	const Matrix2d& inPlaneDr = inPlanePiolaKirhoffStresses[f];
-		//	double dr11 = inPlaneDr(0, 0);
-		//	double dr12 = inPlaneDr(0, 1);
-		//	double dr22 = inPlaneDr(1, 1);
+			const Matrix2d& inPlaneDr = inPlanePiolaKirhoffStresses[f];
+			double dr11 = inPlaneDr(0, 0);
+			double dr12 = inPlaneDr(0, 1);
+			double dr22 = inPlaneDr(1, 1);
 
-		//	double dr13 = mesh_->shearStiffness * R(0, 2);
-		//	double dr23 = mesh_->shearStiffness * R(1, 2);
+			double dr13 = mesh_->shearStiffness * R(0, 2);
+			double dr23 = mesh_->shearStiffness * R(1, 2);
 
-		//	double dr33 = R(2, 2) > 1.0 ? 0.0 : mesh_->stiffness * (1.0 - R(2, 2))
-		//		* (1.0 - R(2, 2));
+			double dr33 = R(2, 2) > 1.0 ? 0.0 : mesh_->stiffness * (1.0 - R(2, 2))
+				* (1.0 - R(2, 2));
 
-		//	Matrix3d dR;
-		//	dR << dr11, dr12, dr13,
-		//		0.0, dr22, dr23,
-		//		0.0, 0.0, dr33;
-		//	Matrix3d K = dR * R.transpose();
+			Matrix3d dR;
+			dR << dr11, dr12, dr13,
+				0.0, dr22, dr23,
+				0.0, 0.0, dr33;
+			Matrix3d K = dR * R.transpose();
 
-		//	Vector3d dF3 = Q * (K.triangularView<StrictlyUpper>().toDenseMatrix()
-		//		+ K.triangularView<Upper>().transpose().toDenseMatrix()) * R.inverse().transpose()
-		//		* restDirectionMatrix.transpose().col(2);
+			Vector3d dF3 = Q * (K.triangularView<StrictlyUpper>().toDenseMatrix()
+				+ K.triangularView<Upper>().transpose().toDenseMatrix()) * R.inverse().transpose()
+				* restDirectionMatrix.transpose().col(2);
 
-		//	Matrix3d meshStress = mesh_->elementVolumes[f] * dF3 * directionMatrix.col(2).transpose();
+			Matrix3d meshStress = mesh_->elementVolumes[f] * dF3 * directionMatrix.col(2).transpose();
 
-		//	meshStress_11[f] = meshStress(0, 0);
-		//	meshStress_12[f] = meshStress(0, 1);
-		//	meshStress_13[f] = meshStress(0, 2);
+			meshStress_11[f] = meshStress(0, 0);
+			meshStress_12[f] = meshStress(0, 1);
+			meshStress_13[f] = meshStress(0, 2);
 
-		//	meshStress_21[f] = meshStress(1, 0);
-		//	meshStress_22[f] = meshStress(1, 1);
-		//	meshStress_23[f] = meshStress(1, 2);
+			meshStress_21[f] = meshStress(1, 0);
+			meshStress_22[f] = meshStress(1, 1);
+			meshStress_23[f] = meshStress(1, 2);
 
-		//	meshStress_31[f] = meshStress(2, 0);
-		//	meshStress_32[f] = meshStress(2, 1);
-		//	meshStress_33[f] = meshStress(2, 2);
-		//}
+			meshStress_31[f] = meshStress(2, 0);
+			meshStress_32[f] = meshStress(2, 1);
+			meshStress_33[f] = meshStress(2, 2);
+		}
 
-		//rg_->forces.col(0) -= delementOmegas_1_.transpose() * meshStress_11;
-		//rg_->forces.col(0) -= delementOmegas_2_.transpose() * meshStress_12;
-		//rg_->forces.col(0) -= delementOmegas_3_.transpose() * meshStress_13;
+		rg_->forces.col(0) -= delementOmegas_1_.transpose() * meshStress_11;
+		rg_->forces.col(0) -= delementOmegas_2_.transpose() * meshStress_12;
+		rg_->forces.col(0) -= delementOmegas_3_.transpose() * meshStress_13;
 
-		//rg_->forces.col(1) -= delementOmegas_1_.transpose() * meshStress_21;
-		//rg_->forces.col(1) -= delementOmegas_2_.transpose() * meshStress_22;
-		//rg_->forces.col(1) -= delementOmegas_3_.transpose() * meshStress_23;
+		rg_->forces.col(1) -= delementOmegas_1_.transpose() * meshStress_21;
+		rg_->forces.col(1) -= delementOmegas_2_.transpose() * meshStress_22;
+		rg_->forces.col(1) -= delementOmegas_3_.transpose() * meshStress_23;
 
-		//rg_->forces.col(2) -= delementOmegas_1_.transpose() * meshStress_31;
-		//rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
-		//rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
+		rg_->forces.col(2) -= delementOmegas_1_.transpose() * meshStress_31;
+		rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
+		rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
 	}
 }
 
@@ -521,21 +522,13 @@ void HybridSolver::gridCollisionHandling_(Eigen::MatrixX3d& gridVelocityChanges)
 
 	if (mesh_ != nullptr)
 	{
-		VectorXd vertexIsFixed(vertexOmegas_.rows());
-		vertexIsFixed.setZero();
-		vertexIsFixed[0] = 1.0;
-		vertexIsFixed[24] = 1.0;
-		//vertexIsFixed[624] = 1.0;
-		//vertexIsFixed[600] = 1.0;
-
-		// handle fixed cloth vertex
 		for (int s = 0; s < vertexOmegas_.outerSize(); ++s)
 			for (SparseMatrix<double>::InnerIterator it(vertexOmegas_, s); it; ++it)
 			{
 				int vertexID = it.row();
 				int gridID = it.col();
 
-				if (vertexIsFixed(vertexID))
+				if (mesh_->vertexIsFixed(vertexID))
 				{
 					int ri = get<0>(rg_->toCoordinate(gridID));
 					int rj = get<1>(rg_->toCoordinate(gridID));
@@ -550,7 +543,7 @@ void HybridSolver::gridCollisionHandling_(Eigen::MatrixX3d& gridVelocityChanges)
 								if ((i - ri) * (i - ri)
 									+ (j - rj) * (j - rj)
 									+ (k - rk) * (k - rk)
-									<= 1.0)
+									<= 0.5)
 								{
 									int index = rg_->toIndex(i, j, k);
 									if (0 <= index && index < rg_->gridNumber())
@@ -646,7 +639,7 @@ void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
 		MatrixX3d candidateGridPositions = rg_->positions() + Dt * rg_->velocities;
 		MatrixX3d candidateVertexPositions = mesh_->vertexPositions
 			+ Dt * vertexOmegas_ * rg_->velocities;
-		matrixRelaxer(candidateVertexPositions, 1e-12);
+		//matrixRelaxer(candidateVertexPositions, 1e-12);
 
 		//fout << candidateVertexPositions << endl;
 
@@ -665,12 +658,12 @@ void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
 			//fout << "begin" << endl;
 			Vector3d d1 = candidateVertexPositions.row(mesh_->faces.row(f)[1])
 				- candidateVertexPositions.row(mesh_->faces.row(f)[0]);
-			vector3Relaxer(d1, 1e-12);
+			//vector3Relaxer(d1, 1e-12);
 
 			Vector3d d2 = candidateVertexPositions.row(mesh_->faces.row(f)[2])
 				- candidateVertexPositions.row(mesh_->faces.row(f)[0]);
 
-			vector3Relaxer(d2, 1e-12);
+			//vector3Relaxer(d2, 1e-12);
 			//fout << d1.transpose() << ", " << restDirectionMatrix.col(0).transpose() << endl;
 			//fout << d2.transpose() << ", " << restDirectionMatrix.col(1).transpose() << endl;
 
@@ -680,7 +673,7 @@ void HybridSolver::updateDeformationGradients_(double Dt, MaterialType type)
 			elementMul.col(2) = elementMultiplier_col_3.row(f);
 
 			Vector3d d3 = elementMul * (mesh_->elementDirections_3.row(f).transpose());
-			vector3Relaxer(d3, 1e-16);
+			//vector3Relaxer(d3, 1e-16);
 
 			Matrix3d virtualElementDirection;
 			virtualElementDirection.col(0) = d1;
@@ -762,8 +755,6 @@ void HybridSolver::updateParticleVelocities_(double alpha, double Dt,
 	if (mesh_ != nullptr)
 	{
 		mesh_->vertexVelocities = vertexOmegas_ * rg_->velocities;
-		matrixRelaxer(mesh_->vertexVelocities, 1e-12);
-
 		for (int f = 0; f < mesh_->elementVelocities.rows(); ++f)
 		{
 			Vector3d vel_1 = mesh_->vertexVelocities.row(mesh_->faces.row(f)[0]);
@@ -772,7 +763,6 @@ void HybridSolver::updateParticleVelocities_(double alpha, double Dt,
 
 			mesh_->elementVelocities.row(f) = (vel_1 + vel_2 + vel_3) / 3.0;
 		}
-		matrixRelaxer(mesh_->elementVelocities, 1e-12);
 	}
 
 	//ofstream fout("vellog.txt", ios::app);
@@ -827,23 +817,23 @@ void HybridSolver::updateAffineMomenta_(
 		* rg_->positions()
 		- particleVelocities_t.col(2).asDiagonal() * particlePositions;
 
-	//for (int i = 0; i < affineMomenta_1.rows(); ++i)
-	//{
-	//	Matrix3d C;
-	//	C.row(0) = affineMomenta_1.row(i);
-	//	C.row(1) = affineMomenta_2.row(i);
-	//	C.row(2) = affineMomenta_3.row(i);
+	for (int i = 0; i < affineMomenta_1.rows(); ++i)
+	{
+		Matrix3d C;
+		C.row(0) = affineMomenta_1.row(i);
+		C.row(1) = affineMomenta_2.row(i);
+		C.row(2) = affineMomenta_3.row(i);
 
-	//	Matrix3d skew, symm;
-	//	symm << C(0, 0), 0.5 * (C(0, 1) + C(1, 0)), 0.5 * (C(0, 2) + C(2, 0)),
-	//		0.5 * (C(0, 1) + C(1, 0)), C(1, 1), 0.5 * (C(1, 2) + C(2, 1)),
-	//		0.5 * (C(0, 2) + C(2, 0)), 0.5 * (C(1, 2) + C(2, 1)), C(2, 2);
-	//	skew = C - symm;
-	//	C = skew + (1 - dampRatio) * symm;
-	//	affineMomenta_1.row(i) = C.row(0);
-	//	affineMomenta_2.row(i) = C.row(1);
-	//	affineMomenta_3.row(i) = C.row(2);
-	//}
+		Matrix3d skew, symm;
+		symm << C(0, 0), 0.5 * (C(0, 1) + C(1, 0)), 0.5 * (C(0, 2) + C(2, 0)),
+			0.5 * (C(0, 1) + C(1, 0)), C(1, 1), 0.5 * (C(1, 2) + C(2, 1)),
+			0.5 * (C(0, 2) + C(2, 0)), 0.5 * (C(1, 2) + C(2, 1)), C(2, 2);
+		skew = C - symm;
+		C = skew + (1 - dampRatio) * symm;
+		affineMomenta_1.row(i) = C.row(0);
+		affineMomenta_2.row(i) = C.row(1);
+		affineMomenta_3.row(i) = C.row(2);
+	}
 }
 
 void HybridSolver::solve(double CFL, double maxt, double alpha)
@@ -885,8 +875,8 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 	clog << "begin to solve...\n";
 	while (t <= maxt)
 	{
-		double Dt = CFL / max(3e3, rg_->CFL_condition());
-
+		//double Dt = CFL / max(3e3, rg_->CFL_condition());
+		double Dt = 0.01;
 		clog << "time: " << t << ", ";
 		clog << "delta t: " << Dt << endl;
 
@@ -899,7 +889,7 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		gridVelocityChanges.resize(rg_->velocities.rows(), 3);
 
 		updateGridVelocities_(Dt, 1e-20, gridVelocityChanges);
-		Dt = CFL / max(3e3, rg_->CFL_condition());
+		//Dt = CFL / max(3e3, rg_->CFL_condition());
 		clog << "delta t: " << Dt << endl;
 		//fout << "gridvel" << endl << rg_->velocities << endl;
 		clog << "done!\n";
@@ -938,13 +928,13 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 				mesh_->vertexPositions,
 				mesh_->vertexVelocities,
 				0.0);
-			updateAffineMomenta_(mesh_->elementAffineMomenta_1,
-				mesh_->elementAffineMomenta_2,
-				mesh_->elementAffineMomenta_3,
-				elementOmegas_,
-				mesh_->elementPositions,
-				mesh_->elementVelocities,
-				0.0);
+			//updateAffineMomenta_(mesh_->elementAffineMomenta_1,
+			//	mesh_->elementAffineMomenta_2,
+			//	mesh_->elementAffineMomenta_3,
+			//	elementOmegas_,
+			//	mesh_->elementPositions,
+			//	mesh_->elementVelocities,
+			//	0.0);
 		}
 		clog << "done!\n";
 
@@ -959,13 +949,10 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		if (mesh_ != nullptr)
 		{
 			mesh_->vertexPositions += Dt * mesh_->vertexVelocities;
-			matrixRelaxer(mesh_->vertexPositions, 1e-12);
-
 			//fout << "particle" << endl << ps_->positions - restpPos << endl;
 			fout << "mesh" << endl << mesh_->vertexPositions << endl;
 
 			mesh_->updateElementPositions();
-			matrixRelaxer(mesh_->elementPositions, 1e-12);
 		}
 		clog << "done!\n";
 

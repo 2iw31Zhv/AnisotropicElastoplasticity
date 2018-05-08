@@ -351,6 +351,17 @@ LagrangianMesh LagrangianMesh::ObjMesh(const std::string & filename,
 		tan(frictionAngleInDegree * igl::PI / 180.0));
 }
 
+void LagrangianMesh::bindConstraints(Eigen::VectorXd * vertexIsFixed_p)
+{
+	if (vertexIsFixed_p->size() != vertexPositions.rows())
+	{
+		cerr << "[ERROR]: the constraints are not compatible!: "
+			<< __FUNCTION__ << ", " << __LINE__ << endl;
+		while (1);
+	}
+	vertexIsFixed_ = vertexIsFixed_p;
+}
+
 void LagrangianMesh::updateViewer()
 {
 	viewer_->data.set_mesh(vertexPositions, faces);
@@ -456,5 +467,26 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		vertexForces.row(faces.row(f)[0]) += f1;
 		vertexForces.row(faces.row(f)[1]) += f2;
 		vertexForces.row(faces.row(f)[2]) += f3;
+	}
+}
+
+bool LagrangianMesh::vertexIsFixed(int vertexID) const
+{
+	if (vertexIsFixed_ != nullptr)
+	{
+		if (0 <= vertexID && vertexID < vertexIsFixed_->size())
+		{
+			return (*vertexIsFixed_)[vertexID];
+		}
+		else
+		{
+			cerr << "[ERROR]: The vertex index is outside the range!: "
+				<< __FUNCTION__ << ", " << __LINE__ << endl;
+			while (1);
+		}
+	}
+	else
+	{
+		return false;
 	}
 }

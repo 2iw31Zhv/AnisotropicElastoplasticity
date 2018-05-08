@@ -14,6 +14,8 @@ class LagrangianMesh
 {
 private:
 	igl::viewer::Viewer * viewer_;
+	Eigen::VectorXd * vertexIsFixed_;
+
 
 	Eigen::MatrixX3d colors_;
 
@@ -60,6 +62,8 @@ public:
 	Eigen::MatrixX3d elementDirections_2;
 	Eigen::MatrixX3d elementDirections_3;
 
+	
+
 	double mu;
 	double lambda;
 	
@@ -98,6 +102,7 @@ public:
 		double frictionAngleInDegree);
 
 	void bindViewer(igl::viewer::Viewer * viewer) { viewer_ = viewer; }
+	void bindConstraints(Eigen::VectorXd * vertexIsFixed_p);
 	void updateViewer();
 	void updateElementPositions();
 
@@ -107,4 +112,6 @@ public:
 
 	void computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		std::vector < Eigen::Matrix2d > & inPlanePiolaKirhoffStresses);
+
+	bool vertexIsFixed(int vertexID) const;
 };
