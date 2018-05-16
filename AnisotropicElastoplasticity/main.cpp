@@ -43,33 +43,36 @@ int main()
 	viewer::Viewer viewer;
 
 	ParticleSystem ps = ParticleSystem::SandCylinder(
-	Vector3d(0.0, 0.0, 0.02),
-		0.5,
-		2.0,
+	Vector3d(0.0, 0.0, 0.1),
+		0.25,
+		0.6,
 		1e4);
 
-	double meshRes = 1;
+	double meshRes = 24.0;
 	double gridLen = 1.0 / meshRes;
+	double totalLen = 50.0 * gridLen;
 
-	//RegularGrid rg(Vector3d(- 1.2 * totalLen, - 0.4 * totalLen, -0.9 * totalLen),
-	//	Vector3d(0.4 * totalLen, 0.4 * totalLen, 0.1 * totalLen),
-	//	Vector3i(80, 40, 50));
-	RegularGrid rg(Vector3d(- 9 * gridLen, - 3 * gridLen, - 9 * gridLen),
-		Vector3d(3 * gridLen, 3 * gridLen, 3 * gridLen),
-		Vector3i(12, 6, 12));
+	RegularGrid rg(Vector3d(- 0.8 * totalLen, - 0.8 * totalLen, -1.8 * totalLen),
+		Vector3d(0.8 * totalLen, 0.8 * totalLen, 2.2 * totalLen),
+		Vector3i(80, 80, 200));
+	//RegularGrid rg(Vector3d(- 9 * gridLen, - 3 * gridLen, - 9 * gridLen),
+	//	Vector3d(4 * gridLen, 4 * gridLen, 4 * gridLen),
+	//	Vector3i(52, 28, 52));
 
 	VectorXd constraints;
-	constraints.resize(9);
+	constraints.resize(833);
 	constraints.setZero();
 	constraints[0] = 1.0;
-	constraints[2] = 1.0;
+	constraints[16] = 1.0;
+	constraints[816] = 1.0;
+	constraints[832] = 1.0;
 
 	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
-		"square_double_1.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
+		"square_double_24x8.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
 
 	mesh.bindConstraints(&constraints);
 
-	//solver.setParticleSystem(&ps);
+	solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
 	solver.setLagrangianMesh(&mesh);
 
@@ -86,7 +89,7 @@ int main()
 	viewer.core.point_size = 3.0;
 	viewer.core.background_color = Vector4f(0.0, 0.0, 0.0, 0.0);
 	viewer.core.is_animating= true;
-	viewer.core.show_lines = true;
+	viewer.core.show_lines = false;
 	viewer.callback_key_down = &key_down;
 	viewer.callback_pre_draw = &pre_draw;
 	

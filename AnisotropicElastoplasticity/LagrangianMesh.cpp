@@ -435,7 +435,7 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 			i12 = invRest(0, 1),
 			i22 = invRest(1, 1);
 
-		Matrix2d refInPlaneR = inPlaneR * invRest;
+		Matrix2d refInPlaneR = invRest * inPlaneR;
 
 		Matrix2d invRefMulDet;
 		invRefMulDet << refInPlaneR(1, 1), -refInPlaneR(0, 1),

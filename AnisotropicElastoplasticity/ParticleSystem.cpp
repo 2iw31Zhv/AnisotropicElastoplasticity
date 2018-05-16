@@ -206,7 +206,7 @@ ParticleSystem ParticleSystem::SandBall(const Eigen::Vector3d & center, double r
 		//affineMomenta.push_back(Matrix3d::Zero());
 	}
 
-	double totalMass = 2200 * 3.14 * radius * radius * radius;
+	double totalMass = 1300 * 3.14 * radius * radius * radius;
 
 	VectorXd masses(sampleNumber);
 	masses.setOnes();
@@ -293,7 +293,7 @@ ParticleSystem ParticleSystem::SandBlock(
 		//affineMomenta.push_back(Matrix3d::Zero());
 	}
 
-	double totalMass = 2200 * ((bmax - bmin).prod() - 0.25 * igl::PI * holeRadius * holeRadius
+	double totalMass = 1300 * ((bmax - bmin).prod() - 0.25 * igl::PI * holeRadius * holeRadius
 		* holeRadius);
 
 	VectorXd masses(sampleNumber);
@@ -366,7 +366,7 @@ ParticleSystem ParticleSystem::SandCylinder(
 		//affineMomenta.push_back(Matrix3d::Zero());
 	}
 
-	double totalMass = 2200 * igl::PI * radius * radius * height;
+	double totalMass = 1300 * igl::PI * radius * radius * height;
 
 	VectorXd masses(sampleNumber);
 	masses.setOnes();

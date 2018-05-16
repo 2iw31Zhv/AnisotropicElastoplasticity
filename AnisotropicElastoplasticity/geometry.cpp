@@ -35,7 +35,7 @@ void GramSchmidtOrthonomalization(Eigen::Matrix3d & Q,
 	const Vector3d& d1 = matrix.col(0);
 	const Vector3d& d2 = matrix.col(1);
 	const Vector3d& d3 = matrix.col(2);
-
+	
 	Vector3d q1 = d1.normalized();
 	double r11 = d1.norm();
 
