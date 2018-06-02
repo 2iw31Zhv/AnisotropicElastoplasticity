@@ -382,8 +382,6 @@ void LagrangianMesh::updateElementPositions()
 void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 	std::vector<Eigen::Matrix2d>& inPlanePiolaKirhoffStresses)
 {
-	//ofstream fout("stresslog.txt", ios::app);
-	//fout << endl << "start" << endl;
 	int Nv = vertexPositions.rows();
 	vertexForces.resize(Nv, 3);
 	vertexForces.setZero();
@@ -393,7 +391,6 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 
 	for (int f = 0; f < Ne; ++f)
 	{
-		//fout << "begin" << endl;
 		Matrix3d restDirectionMatrix;
 		Vector3d D1, D2, D3;
 
@@ -405,14 +402,10 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 		restDirectionMatrix.col(1) = D2;
 		restDirectionMatrix.col(2) = D3;
 
-		//fout << restDirectionMatrix << endl;
-
 		Matrix3d directionMatrix;
 		directionMatrix.col(0) = elementDirections_1.row(f);
 		directionMatrix.col(1) = elementDirections_2.row(f);
 		directionMatrix.col(2) = elementDirections_3.row(f);
-
-		//fout << directionMatrix << endl;
 
 		Matrix3d Q, R;
 		Vector3d q1, q2, q3;
@@ -447,14 +440,10 @@ void LagrangianMesh::computeVertexInPlaneForces(Eigen::MatrixX3d & vertexForces,
 			* svd.matrixV().transpose();
 		double J = refInPlaneR.diagonal().prod();
 
-		//forceRelaxer(rotation, symmetry, J, 1e-15);
-
 		Matrix2d piolaKirhoffStress = 2.0 * mu * (refInPlaneR - rotation)
 			+ lambda * (J - 1.0) * invRefMulDet.transpose();
 
-		inPlanePiolaKirhoffStresses[f] = piolaKirhoffStress;
-
-		//fout << piolaKirhoffStress << endl;
+		inPlanePiolaKirhoffStresses[f] = invRest * piolaKirhoffStress;
 
 		double dr11 = piolaKirhoffStress(0, 0),
 			dr12 = piolaKirhoffStress(0, 1),

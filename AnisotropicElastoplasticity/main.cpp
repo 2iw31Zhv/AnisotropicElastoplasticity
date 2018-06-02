@@ -43,7 +43,7 @@ int main()
 	viewer::Viewer viewer;
 
 	ParticleSystem ps = ParticleSystem::SandCylinder(
-	Vector3d(0.0, 0.0, 0.1),
+	Vector3d(-0.5, 0.0, 0.1),
 		0.25,
 		0.6,
 		1e4);
@@ -52,23 +52,18 @@ int main()
 	double gridLen = 1.0 / meshRes;
 	double totalLen = 50.0 * gridLen;
 
-	RegularGrid rg(Vector3d(- 0.8 * totalLen, - 0.8 * totalLen, -1.8 * totalLen),
-		Vector3d(0.8 * totalLen, 0.8 * totalLen, 2.2 * totalLen),
-		Vector3i(80, 80, 200));
-	//RegularGrid rg(Vector3d(- 9 * gridLen, - 3 * gridLen, - 9 * gridLen),
-	//	Vector3d(4 * gridLen, 4 * gridLen, 4 * gridLen),
-	//	Vector3i(52, 28, 52));
+	RegularGrid rg(Vector3d(-1.2 * totalLen, - 0.6 * totalLen, -0.8 * totalLen),
+		Vector3d(0.6 * totalLen, 0.6 * totalLen, 0.8 * totalLen),
+		Vector3i(90, 60, 80));
 
 	VectorXd constraints;
-	constraints.resize(833);
+	constraints.resize(425);
 	constraints.setZero();
 	constraints[0] = 1.0;
 	constraints[16] = 1.0;
-	constraints[816] = 1.0;
-	constraints[832] = 1.0;
 
 	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
-		"square_double_24x8.obj", 2e3, 1e-3, 200, 0.3, 0.0, 4e4, 0.0);
+		"square_double_12x8.obj", 2e3, 0.04, 200, 0.3, 0.0, 4e4, 0.0);
 
 	mesh.bindConstraints(&constraints);
 
@@ -77,11 +72,11 @@ int main()
 	solver.setLagrangianMesh(&mesh);
 
 	using namespace std::placeholders;
-	LevelSet gls_m05 = bind(groundLevelSet, _1, -3.0);
-	DLevelSet dgls_m05 = bind(DgroundLevelSet, _1, -3.0);
+	LevelSet gls_m14 = bind(groundLevelSet, _1, -1.4);
+	DLevelSet dgls_m14 = bind(DgroundLevelSet, _1, -1.4);
 	//LevelSet w2g_110 = bind(wall2groundLevelSet, _1, 1.0, 1.0, 0.0);
 	//DLevelSet dw2g_110 = bind(Dwall2groundLevelSet, _1, 1.0, 1.0, 0.0);
-	solver.setLevelSet(gls_m05, dgls_m05);
+	solver.setLevelSet(gls_m14, dgls_m14);
 
 	solver.bindViewer(&viewer);
 

@@ -354,6 +354,8 @@ ParticleSystem ParticleSystem::SandCylinder(
 	MatrixX3d velocities;
 	velocities.resize(sampleNumber, 3);
 	velocities.setZero();
+	velocities.col(2).setOnes();
+	velocities *= -1.0;
 
 	vector<Matrix3d> elasticDeformationGradients;
 	vector<Matrix3d> plasticDeformationGradients;

@@ -63,12 +63,12 @@ private:
 	void particleToGrid_(double tolerance, bool evaluateVolumesAndDensities);
 
 	void computeGridForces_(double Dt, MaterialType type);
-	void gridCollisionHandling_(Eigen::MatrixX3d& gridVelocityChanges);
-	void updateDeformationGradients_(double Dt, MaterialType type);
-	void updateGridVelocities_(double Dt, double tolerance,
-		Eigen::MatrixX3d& gridVelocityChanges);
-	void updateParticleVelocities_(double alpha, double Dt,
-		const Eigen::MatrixX3d& gridVelocityChanges);
+	void gridCollisionHandling_(Eigen::MatrixX3d& gridVelocitiesBeforeFriction);
+	void updateDeformationGradient_(double Dt, MaterialType type,
+		const Eigen::MatrixX3d& gridVelocityBeforeFriction);
+	void updatePlasticity_(double Dt, MaterialType type);
+	void updateGridVelocities_(double Dt, double tolerance);
+	void updateParticleVelocities_(double alpha, double Dt);
 
 	void updateAffineMomenta_(Eigen::MatrixX3d& affineMomenta_1,
 		Eigen::MatrixX3d& affineMomenta_2,
