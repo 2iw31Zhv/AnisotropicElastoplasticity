@@ -453,6 +453,8 @@ void HybridSolver::computeGridForces_(double Dt, MaterialType type)
 		rg_->forces.col(2) -= delementOmegas_2_.transpose() * meshStress_32;
 		rg_->forces.col(2) -= delementOmegas_3_.transpose() * meshStress_33;
 	}
+
+	rg_->forces.col(2) -= rg_->masses * 9.8;
 }
 
 void HybridSolver::gridCollisionHandling_(
@@ -531,12 +533,13 @@ void HybridSolver::gridCollisionHandling_(
 								if ((i - ri) * (i - ri)
 									+ (j - rj) * (j - rj)
 									+ (k - rk) * (k - rk)
-									<= 0.25)
+									<= 12)
 								{
 									int index = rg_->toIndex(i, j, k);
 									if (0 <= index && index < rg_->gridNumber())
 									{
 										rg_->velocities.row(index).setZero();
+										gridVelocitiesBeforeFriction.row(index).setZero();
 									}
 								}
 							}
@@ -730,7 +733,6 @@ void HybridSolver::updateGridVelocities_(double Dt, double tolerance)
 			Vector3d vel_add = Dt * force / rg_->masses[c];
 			rg_->velocities.row(c) += vel_add;
 		}
-		rg_->velocities.row(c) += Dt * Vector3d(0.0, 0.0, -9.8);
 	}
 }
 
@@ -915,20 +917,21 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 		}
 		if (mesh_ != nullptr)
 		{
-			//updateAffineMomenta_(mesh_->vertexAffineMomenta_1,
-			//	mesh_->vertexAffineMomenta_2,
-			//	mesh_->vertexAffineMomenta_3,
-			//	vertexOmegas_,
-			//	mesh_->vertexPositions,
-			//	mesh_->vertexVelocities,
-			//	0.0);
-			//updateAffineMomenta_(mesh_->elementAffineMomenta_1,
-			//	mesh_->elementAffineMomenta_2,
-			//	mesh_->elementAffineMomenta_3,
-			//	elementOmegas_,
-			//	mesh_->elementPositions,
-			//	mesh_->elementVelocities,
-			//	0.0);
+			updateAffineMomenta_(mesh_->vertexAffineMomenta_1,
+				mesh_->vertexAffineMomenta_2,
+				mesh_->vertexAffineMomenta_3,
+				vertexOmegas_,
+				mesh_->vertexPositions,
+				mesh_->vertexVelocities,
+				1.0);
+			updateAffineMomenta_(mesh_->elementAffineMomenta_1,
+				mesh_->elementAffineMomenta_2,
+				mesh_->elementAffineMomenta_3,
+				elementOmegas_,
+				mesh_->elementPositions,
+				mesh_->elementVelocities,
+				1.0);
+
 		}
 		clog << "done!\n";
 
@@ -938,14 +941,11 @@ void HybridSolver::solve(double CFL, double maxt, double alpha)
 
 		if (ps_ != nullptr)
 		{
-			//ps_->positions += Dt * ps_->velocities;
 			ps_->positions = omegas_ * (rg_->positions() + Dt * gridVelocityBeforeFriction);
 		}
 		if (mesh_ != nullptr)
 		{
-			//mesh_->vertexPositions += Dt * mesh_->vertexVelocities;
 			mesh_->vertexPositions = vertexOmegas_ * (rg_->positions() + Dt * gridVelocityBeforeFriction);
-			//fout << mesh_->vertexPositions << endl;
 			mesh_->updateElementPositions();
 		}
 		clog << "done!\n";

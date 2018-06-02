@@ -48,26 +48,38 @@ int main()
 		0.6,
 		1e4);
 
-	double meshRes = 24.0;
-	double gridLen = 1.0 / meshRes;
-	double totalLen = 50.0 * gridLen;
+	int nMeshParticle = 565;
 
-	RegularGrid rg(Vector3d(-1.2 * totalLen, - 0.6 * totalLen, -0.8 * totalLen),
-		Vector3d(0.6 * totalLen, 0.6 * totalLen, 0.8 * totalLen),
-		Vector3i(90, 60, 80));
+	double meshRes = sqrt(nMeshParticle) - 1;
+	double gridLen = 1.0 / meshRes;
+
+	double xmin = -2.5,
+		xmax = 1.25,
+		ymin = -1.25,
+		ymax = 1.25,
+		zmin = -1.67,
+		zmax = 1.67;
+
+	int xgridN = static_cast<int>((xmax - xmin) / gridLen + 0.5),
+		ygridN = static_cast<int>((ymax - ymin) / gridLen + 0.5),
+		zgridN = static_cast<int>((zmax - zmin) / gridLen + 0.5);
+
+	RegularGrid rg(Vector3d(xmin, ymin, zmin),
+		Vector3d(xmax, ymax, zmax),
+		Vector3i(xgridN, ygridN, zgridN));
 
 	VectorXd constraints;
-	constraints.resize(425);
+	constraints.resize(nMeshParticle);
 	constraints.setZero();
 	constraints[0] = 1.0;
-	constraints[16] = 1.0;
+	constraints[1] = 1.0;
 
 	LagrangianMesh mesh = LagrangianMesh::ObjMesh(
-		"square_double_12x8.obj", 2e3, 0.04, 200, 0.3, 0.0, 4e4, 0.0);
+		"square_hr2x06.obj", 2e3, 0.04, 200, 0.3, 0.0, 4e4, 0.0);
 
 	mesh.bindConstraints(&constraints);
 
-	solver.setParticleSystem(&ps);
+	//solver.setParticleSystem(&ps);
 	solver.setRegularGrid(&rg);
 	solver.setLagrangianMesh(&mesh);
 
