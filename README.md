@@ -2,6 +2,11 @@
 
 Simulation of Snow, Sand, Cloth and Coupling Based on MPM Method
 
+## Gallery
+![avatar](gallery/block1.png)
+![avatar](gallery/collision30.png)
+![avatar](gallery/coupling52.png)
+
 ## Main References
 Jiang, C., Gast, T., .and Teran, J. Anisotropic elastoplasticity for cloth, knit and hair frictional contact. Acm Transactions on Graphics 36 (2017), 1.
 
